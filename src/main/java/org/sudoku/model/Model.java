@@ -63,6 +63,11 @@ public final class Model extends Observable {
         return fixedBoard;
     }
 
+    // Ensure input value is in legal range
+    private static boolean isValidDigit(int value) {
+        return value >= 0 && value <= 9;
+    }
+
     // Notify observers when the status of model being changed
     private void changed() {
         setChanged();
@@ -84,6 +89,64 @@ public final class Model extends Observable {
     public boolean isFixed(int row, int column) {
         assert inRange(row, column) :  "Row or column of the game board is out of bounds";
         return fixed[row][column];
+    }
+
+    // Check whether grids can be edited
+    public boolean canEdit(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
+        return !fixed[row][column];
+    }
+
+    // Modify modifiable value
+    public boolean setValue(int row, int column, int value) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
+
+        int oldCellValue = getCellValue(row, column);
+
+        if (!canEdit(row, column)) {
+            assert board[row][column] == oldCellValue : "This cell is fixed, can't be modified";
+            return false;
+        }
+        if (!isValidDigit(value)) {
+            assert board[row][column] == oldCellValue : "Only number between 0 and 9 is accepted.";
+            return false;
+        }
+        if (board[row][column] == value) {
+            assert oldCellValue == value;
+            return true; // Don't need to notify
+        }
+
+        board[row][column] = value;
+        changed();
+        assert board[row][column] == value : "Change is not successful";
+        assertInvariants();
+        return true;
+    }
+
+    // Erase value in selected cell
+    public boolean clearValue(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
+
+        int  oldCellValue = getCellValue(row, column);
+
+        if  (!canEdit(row, column)) {
+            assert board[row][column] == oldCellValue : "This cell is fixed, can't be modified";
+            return false;
+        }
+        if (board[row][column] == 0) {
+            return true; // Don't need to notify
+        }
+        board[row][column] = 0;
+        changed();
+        assert board[row][column] == 0 : "Clear is not successful";
+        assertInvariants();
+        return true;
+    }
+
+    // Return true if the cell is empty
+    public boolean isEmpty(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
+        return board[row][column] == 0;
     }
 
     // Check whether game is initialize correctly
