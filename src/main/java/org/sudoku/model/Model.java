@@ -177,6 +177,7 @@ public final class Model extends Observable {
                 assert valueOfBoard >= 0 && valueOfBoard <=9 : "The range of the number in the game board should between 0 and 9.";
                 assert valueOfInitial >= 0 && valueOfInitial <= 9 :  "The range of the number in the game board should between 0 and 9.";
                 assert fixed[row][column] == (valueOfInitial != 0) : "fixed cells must correspond to non-zero givens.";
+                assert !fixed[row][column] || board[row][column] == initial[row][column] : "Fixed cells can never be changed.";
             }
         }
         assert currentPuzzleIndex >= -1 && currentPuzzleIndex < puzzles.size() : "Puzzle index should be in range.";
