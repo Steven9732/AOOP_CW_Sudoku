@@ -13,6 +13,7 @@ public final class Model extends Observable {
     private boolean[][] fixed; // Immutable grids during game time
     private int[][] initial; // Initial game board
     private int currentPuzzleIndex = -1;
+    private boolean validationFeedbackEnabled = true;
 
     Model() {
         this.puzzles = Collections.unmodifiableList(
@@ -92,7 +93,7 @@ public final class Model extends Observable {
     }
 
     // Check whether grids can be edited
-    public boolean canEdit(int row, int column) {
+    public boolean canBeEdit(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return !fixed[row][column];
     }
@@ -103,7 +104,7 @@ public final class Model extends Observable {
 
         int oldCellValue = getCellValue(row, column);
 
-        if (!canEdit(row, column)) {
+        if (!canBeEdit(row, column)) {
             assert board[row][column] == oldCellValue : "This cell is fixed, can't be modified";
             return false;
         }
@@ -129,7 +130,7 @@ public final class Model extends Observable {
 
         int  oldCellValue = getCellValue(row, column);
 
-        if  (!canEdit(row, column)) {
+        if  (!canBeEdit(row, column)) {
             assert board[row][column] == oldCellValue : "This cell is fixed, can't be modified";
             return false;
         }
@@ -147,6 +148,102 @@ public final class Model extends Observable {
     public boolean isEmpty(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board[row][column] == 0;
+    }
+
+    public boolean isValidationFeedbackEnabled() {
+        return validationFeedbackEnabled;
+    }
+
+    // To determine whether the cell with wrong answer need to be highlighted
+    public void setValidationFeedbackEnabled(boolean validationFeedbackEnabled) {
+        if (this.validationFeedbackEnabled == validationFeedbackEnabled) return;
+        this.validationFeedbackEnabled = validationFeedbackEnabled;
+        changed();
+        assertInvariants();
+    }
+
+    // Computes a 9x9 map marking cells that are part of any duplicate
+    private boolean[][] computeInvalidCells() {
+        boolean[][] invalidCell = new boolean[SIZE][SIZE];
+
+        // rows
+        for (int row = 0; row < SIZE; row++) {
+            int[] count = new int[10];
+            for (int column = 0; column < SIZE; column++) {
+                int value = board[row][column];
+                if (value != 0) {
+                    count[column]++;
+                }
+            }
+            for (int column = 0; column < SIZE; column++) {
+                int value = board[row][column];
+                if (value != 0 && count[column] > 1) {
+                    invalidCell[row][column] = true;
+                }
+            }
+        }
+
+        // Columns
+        for (int column = 0; column < SIZE; column++) {
+            int[] count = new int[10];
+            for (int row = 0; row < SIZE; row++) {
+                int value = board[row][column];
+                if (value != 0) {
+                    count[column]++;
+                }
+            }
+            for (int row = 0; row < SIZE; row++) {
+                int value = board[row][column];
+                if (value != 0 && count[column] > 1) {
+                    invalidCell[row][column] = true;
+                }
+            }
+        }
+
+        // 3x3 subgrid
+        for (int boxR = 0; boxR < 3; boxR++) {
+            for (int boxC = 0; boxC < 3; boxC++) {
+                int[] count = new int[10];
+                int r0 = boxR * 3;
+                int c0 = boxC * 3;
+                for (int rowInBox = 0; rowInBox < 3; rowInBox++) {
+                    for (int columnInBox = 0; columnInBox < 3; columnInBox++) {
+                        int value = board[r0 + rowInBox][c0 + columnInBox];
+                        if (value != 0) {
+                            count[value]++;
+                        }
+                    }
+                }
+                for (int rowInBox = 0; rowInBox < 3;  rowInBox++) {
+                    for (int columnInBox = 0; columnInBox < 3; columnInBox++) {
+                        int value = board[r0 + rowInBox][c0 + columnInBox];
+                        if  (value != 0 && count[value] > 1) {
+                            invalidCell[rowInBox][columnInBox] = true;
+                        }
+                    }
+                }
+            }
+        }
+        return invalidCell;
+    }
+
+    // Ensure no duplicates number in any row, column and 3x3 grid
+    public boolean isBoardValid() {
+        boolean[][] invalid = computeInvalidCells();
+        for  (int row = 0; row < SIZE; row++) {
+            for  (int column = 0; column < SIZE; column++) {
+                if (invalid[row][column]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Returns true if input number is duplicated
+    public boolean isCellValid(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
+        return computeInvalidCells()[row][column];
     }
 
     // Check whether game is initialize correctly
