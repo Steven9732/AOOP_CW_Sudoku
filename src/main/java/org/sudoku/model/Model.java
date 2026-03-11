@@ -15,6 +15,9 @@ public final class Model extends Observable {
     private int currentPuzzleIndex = -1;
     private boolean validationFeedbackEnabled = true;
 
+    private boolean solved = false;
+    private boolean completionEventPending = false;
+
     Model() {
         this.puzzles = Collections.unmodifiableList(
                 PuzzleLoader.loadPuzzlesFromFile("puzzles.txt")
@@ -256,6 +259,45 @@ public final class Model extends Observable {
             }
         }
         return true;
+    }
+
+    // Check whether the current puzzle is solved
+    public boolean isSolved() {
+        return solved;
+    }
+
+    // Return true when puzzle is solved
+    public boolean consumeCompletionEvent() {
+        if (completionEventPending) {
+            completionEventPending = false;
+            return true;
+        }
+        return false;
+    }
+
+    // Check whether the board is full
+    private boolean isBoardFull() {
+        for  (int row = 0; row < SIZE; row++) {
+            for (int column = 0; column < SIZE; column++) {
+                if (board[row][column] == 0) {return false;}
+            }
+        }
+        return true;
+    }
+
+    // Ensure the board is full and valid
+    private boolean isCompletedAndValid() {
+        return isBoardFull() && isBoardValid();
+    }
+
+    // Updates status of current game
+    private void updateCompletionAndStateAfterBoardChange() {
+        boolean wasSolved = solved;
+        solved = isCompletedAndValid();
+        // Check whether the state is changed
+        if (!wasSolved && solved) {
+            completionEventPending = true;
+        }
     }
 
     // Check invariants
