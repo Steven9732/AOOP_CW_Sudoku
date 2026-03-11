@@ -328,5 +328,10 @@ public final class Model extends Observable {
             }
         }
         assert currentPuzzleIndex >= -1 && currentPuzzleIndex < puzzles.size() : "Puzzle index should be in range.";
+
+        if (solved) {
+            assert isBoardFull() : "The pre-condition of solved all cells in board is full.";
+            assert isBoardValid() : "The pre-condition of solved all cells in board is valid.";
+        }
     }
 }
