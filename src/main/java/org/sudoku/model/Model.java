@@ -43,6 +43,10 @@ public final class Model extends Observable {
         this.board = deepCopy(givens); // Initial state of gameboard
         this.fixed = fixedFromInitial(initial); // Determine which grids can be changed during game time
 
+        // Reset solved and event to avoid triggering completion after loading completed
+        solved = false;
+        completionEventPending = false;
+
         changed(); // Notify observers when the status of model being changed
         assert postNewGameCheck(givens) : "Illegal game data loading.";
         assertInvariants();
@@ -121,6 +125,7 @@ public final class Model extends Observable {
         }
 
         board[row][column] = value;
+        updateCompletionStateAfterBoardChange();
         changed();
         assert board[row][column] == value : "Change is not successful";
         assertInvariants();
@@ -141,6 +146,7 @@ public final class Model extends Observable {
             return true; // Don't need to notify
         }
         board[row][column] = 0;
+        updateCompletionStateAfterBoardChange();
         changed();
         assert board[row][column] == 0 : "Clear is not successful";
         assertInvariants();
@@ -291,7 +297,7 @@ public final class Model extends Observable {
     }
 
     // Updates status of current game
-    private void updateCompletionAndStateAfterBoardChange() {
+    private void updateCompletionStateAfterBoardChange() {
         boolean wasSolved = solved;
         solved = isCompletedAndValid();
         // Check whether the state is changed
