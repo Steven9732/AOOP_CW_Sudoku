@@ -20,6 +20,22 @@ public final class Model extends Observable {
     private boolean solved = false;
     private boolean completionEventPending = false;
 
+    private final Deque<Move> history = new ArrayDeque<>();
+    private int[][] solution; // The solution for current puzzle
+
+    // Used for cell modification recording
+    private static final class Move {
+        final int row, col;
+        final int oldValue, newValue;
+
+        Move(int row, int col, int oldValue, int newValue) {
+            this.row = row;
+            this.col = col;
+            this.oldValue = oldValue;
+            this.newValue = newValue;
+        }
+    }
+
     Model() {
         this.puzzles = Collections.unmodifiableList(
                 PuzzleLoader.loadPuzzlesFromFile("puzzles.txt")
@@ -52,9 +68,11 @@ public final class Model extends Observable {
         this.fixed = fixedFromInitial(initial); // Determine which grids can be changed during game time
 
         // Reset solved and event to avoid triggering completion after loading completed
+        history.clear();
         solved = false;
         completionEventPending = false;
 
+        solution = deepCopy(initial);
         changed(); // Notify observers when the status of model being changed
         assert postNewGameCheck(givens) : "Illegal game data loading.";
         assertInvariants();
@@ -132,6 +150,8 @@ public final class Model extends Observable {
             return true; // Don't need to notify
         }
 
+        int oldValue = board[row][column];
+        history.push(new Move(row, column, oldValue, value));
         board[row][column] = value;
         updateCompletionStateAfterBoardChange();
         changed();
@@ -153,6 +173,9 @@ public final class Model extends Observable {
         if (board[row][column] == 0) {
             return true; // Don't need to notify
         }
+
+        int oldValue = board[row][column];
+        history.push(new Move(row, column, oldValue, 0));
         board[row][column] = 0;
         updateCompletionStateAfterBoardChange();
         changed();
@@ -332,6 +355,94 @@ public final class Model extends Observable {
         this.hintEnabled = enabled;
         changed();
         assertInvariants();
+    }
+
+    // Undo the last step
+    public boolean undo() {
+        if (history.isEmpty()) return false;
+
+        Move lastestMove = history.pop();
+        board[lastestMove.row][lastestMove.col] = lastestMove.oldValue;
+        updateCompletionStateAfterBoardChange();
+        changed();
+        assertInvariants();
+        return true;
+    }
+
+    // Set the game to the initial state
+    public boolean reset() {
+        board = deepCopy(initial);
+        history.clear();
+
+        solved = false;
+        completionEventPending = false;
+        changed();
+        assertInvariants();
+        return true;
+    }
+
+    // Give hint to player
+    public boolean applyHint() {
+        if (!hintEnabled) return false;
+        if (solution == null) return false;
+
+        for (int row = 0; row < SIZE; row++) {
+            for (int column = 0; column < SIZE; column++) {
+                if (!fixed[row][column]) {
+                    int value = board[row][column];
+                    history.push(new Move(row, column, 0, value));
+                    board[row][column] = value;
+                    changed();
+                    assertInvariants();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isSafe(int[][] grid, int row, int column, int value) {
+        // Check each row
+        for (int c = 0; c < SIZE; c++) {
+            if (grid[row][c] == value) {return false;}
+        }
+        // Check each column
+        for (int r = 0; r < SIZE; r++) {
+            if (grid[r][column] == value) {return false;}
+        }
+        //chcek each box
+        int br = (row/3) * 3;
+        int bc = (column/3) * 3;
+        for (int dr = 0; dr < 3; dr++) {
+            for (int dc = 0; dc < 3; dc++) {
+                if (grid[br + dr][bc + dc] == value) {return false;}
+            }
+        }
+        return true;
+    }
+
+    private static int[] findEmpty(int[][] grid) {
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (grid[r][c] == 0) return new int[]{r, c};
+            }
+        }
+        return null;
+    }
+
+    private static boolean solveInPlace(int[][] grid) {
+        int[] pos = findEmpty(grid);
+        if (pos == null) return true; // solved
+
+        int r = pos[0], c = pos[1];
+        for (int v = 1; v <= 9; v++) {
+            if (isSafe(grid, r, c, v)) {
+                grid[r][c] = v;
+                if (solveInPlace(grid)) return true;
+                grid[r][c] = 0;
+            }
+        }
+        return false;
     }
 
     // Check invariants
