@@ -14,6 +14,8 @@ public final class Model extends Observable {
     private int[][] initial; // Initial game board
     private int currentPuzzleIndex = -1;
     private boolean validationFeedbackEnabled = true;
+    private boolean hintEnabled = true; // Hint flag
+    private boolean randomPuzzleSelectionEnabled = true; // Puzzle selection flag
 
     private boolean solved = false;
     private boolean completionEventPending = false;
@@ -30,7 +32,13 @@ public final class Model extends Observable {
 
     // Load a new random puzzle
     public void newGame() {
-        newGame(random.nextInt(puzzles.size()));
+        int index;
+        if (randomPuzzleSelectionEnabled) {
+            index = random.nextInt(this.puzzles.size());
+        } else {
+            index = (currentPuzzleIndex + 1) % puzzles.size();
+        }
+        newGame(index);
     }
 
     private void newGame(int currentPuzzleIndex) {
@@ -304,6 +312,26 @@ public final class Model extends Observable {
         if (!wasSolved && solved) {
             completionEventPending = true;
         }
+    }
+
+    public void setRandomPuzzleSelectionEnabled(boolean enabled) {
+        if (this.randomPuzzleSelectionEnabled != enabled) return; // Ensure the status is really changed
+        this.randomPuzzleSelectionEnabled = enabled;
+        changed();
+        assertInvariants();
+    }
+
+    // Get the status of the puzzle selection
+    public boolean isRandomPuzzleSelectionEnabled() {return randomPuzzleSelectionEnabled;}
+
+    // Get the status of whether hint is enabled
+    public boolean isHintEnabled() {return hintEnabled;}
+
+    public void setHintEnabled(boolean enabled) {
+        if (this.hintEnabled != enabled) return; // Ensure the status is really changed
+        this.hintEnabled = enabled;
+        changed();
+        assertInvariants();
     }
 
     // Check invariants
