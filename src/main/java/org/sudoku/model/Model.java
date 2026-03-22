@@ -36,7 +36,7 @@ public final class Model extends Observable {
         }
     }
 
-    Model() {
+    public Model() {
         this.puzzles = Collections.unmodifiableList(
                 PuzzleLoader.loadPuzzlesFromFile("puzzles.txt")
         );
