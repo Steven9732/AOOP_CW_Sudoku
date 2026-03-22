@@ -7,9 +7,9 @@ import java.awt.event.ActionListener;
 import java.util.function.IntSupplier;
 
 public class EraseAction implements ActionListener{
-    private Model model;
-    private IntSupplier selectedRow;
-    private IntSupplier selectedColumn;
+    private final Model model;
+    private final IntSupplier selectedRow;
+    private final IntSupplier selectedColumn;
 
     public EraseAction(Model model, IntSupplier selectedRow, IntSupplier selectedColumn) {
         this.model = model;
