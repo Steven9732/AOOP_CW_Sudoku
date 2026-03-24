@@ -3,7 +3,7 @@ package org.sudoku.model;
 import java.util.*;
 
 @SuppressWarnings("deprecation")
-public final class Model extends Observable {
+public final class Model extends Observable implements SudokuModel {
     public static final int SIZE = 9;
 
     private final List<Puzzle> puzzles; // Numbers loaded from puzzles.txt
@@ -281,7 +281,7 @@ public final class Model extends Observable {
     }
 
     // Returns true if input number is duplicated
-    public boolean isCellValid(int row, int column) {
+    public boolean isCellInvalid(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return computeInvalidCells()[row][column];
     }
