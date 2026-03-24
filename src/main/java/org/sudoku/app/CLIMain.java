@@ -29,7 +29,15 @@ public class CLIMain {
             try {
                 boolean stateChanged = false;
                 switch (command) {
-                    case "help" -> printCommands();
+                    case "help" -> printCommands(); // To show all commands
+                    case "show" ->  printBoard(model); //
+                    case "set" -> {
+                        int row = parseInt(token[1], "row") -1;
+                        int column = parseInt(token[2], "column") -1;
+                        int value = parseInt(token[3], "value");
+                        boolean ok = model.setValue(row, column, value);
+                        stateChanged = ok;
+                    }
                 }
             } finally {
 
@@ -52,6 +60,7 @@ public class CLIMain {
         System.out.println("+------+------+------+");
     }
 
+    // Show the commands
     private static void printCommands () {
             System.out.println("""
                 Commands:
@@ -64,5 +73,17 @@ public class CLIMain {
                   new              (or: newgame)
                   quit
                 """);
+    }
+
+    // Parse string to integer
+    private static int parseInt(String input, String name) {
+        int x;
+        try {
+            x = Integer.parseInt(input);
+        }  catch (NumberFormatException e) {
+            throw new IllegalArgumentException(name + " is not a number");
+        }
+        if (x < 1 || x > 9) throw new IllegalArgumentException(name + " must be in 1 to 9.");
+        return x;
     }
 }
