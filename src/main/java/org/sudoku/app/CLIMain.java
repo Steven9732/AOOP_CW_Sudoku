@@ -70,11 +70,13 @@ public class CLIMain {
                 }
                 if (stateChanged) {
                     printBoard(model);
+
                     if (model.consumeCompletionEvent()) {
                         System.out.println("Congratulations! You have successfully solved the game.");
                     }
-                    if (model.isBoardValid() && !model.isBoardValid()) {
-                        System.out.println("Warning: Duplicates Existed.");
+
+                    if (model.isValidationFeedbackEnabled() && !model.isBoardValid()) {
+                        System.out.println("Warning: duplicates exist.");
                         printInvalidCells(model);
                     }
                 }
@@ -132,7 +134,7 @@ public class CLIMain {
         boolean any = false;
         for (int r = 0; r < Model.SIZE; r++) {
             for (int c = 0; c < Model.SIZE; c++) {
-                if (model.getCellValue(r, c) != 0 && model.isCellInvalid(r, c)) {
+                if (model.getCellValue(r, c) != 0 && model.isCellInvalid(r, c) && !model.isFixed(r, c)) {
                     any = true;
                     sb.append("(").append(r + 1).append(",").append(c + 1).append(") ");
                 }
