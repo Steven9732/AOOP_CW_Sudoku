@@ -13,6 +13,8 @@ public class GUIMain {
             SudokuFrame frame = new SudokuFrame();
             SudokuController controller = new SudokuController(model, frame);
 
+            frame.bind(model, controller);
+
             frame.setVisible(true);
             frame.requestFocusInWindow();
         });
