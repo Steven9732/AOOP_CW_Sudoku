@@ -1,9 +1,18 @@
 package org.sudoku.view;
 
+import org.sudoku.controller.SudokuController;
+import org.sudoku.model.Model;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.Observable;
+import java.util.Observer;
 
-public final class SudokuFrame extends JFrame {
+@SuppressWarnings("deprecation")
+public final class SudokuFrame extends JFrame implements Observer {
+    private Model model;
+    private SudokuController controller;
+
     private final BoardPanel boardPanel = new BoardPanel();
 
     // 5 buttons
@@ -26,9 +35,9 @@ public final class SudokuFrame extends JFrame {
 
     public SudokuFrame() {
         super("Sudoku");
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); // Exit rule
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 800));
-        setLocationRelativeTo(null); // Centralize window
+        setLocationRelativeTo(null);
 
         // Left
         JPanel left = new JPanel(new BorderLayout());
@@ -69,9 +78,23 @@ public final class SudokuFrame extends JFrame {
         setFocusable(true);
     }
 
+    public void bind(Model model, SudokuController controller) {
+        this.model = model;
+        this.controller = controller;
+        model.addObserver(this);
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if (controller == null) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> controller.handleModelChanged());
+    }
+
     private static JLabel sectionTitle(String title) {
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD,13f));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 13f));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
         return titleLabel;
     }
@@ -96,25 +119,25 @@ public final class SudokuFrame extends JFrame {
         return p;
     }
 
-    public BoardPanel getBoardPanel() {return boardPanel;}
+    public BoardPanel getBoardPanel() { return boardPanel; }
 
-    public JButton getNewGameButton() {return NewGameButton;}
+    public JButton getNewGameButton() { return NewGameButton; }
 
-    public JButton getResetButton() {return ResetButton;}
+    public JButton getResetButton() { return ResetButton; }
 
-    public JButton getUndoButton() {return UndoButton;}
+    public JButton getUndoButton() { return UndoButton; }
 
-    public JButton getEraseButton() {return EraseButton;}
+    public JButton getEraseButton() { return EraseButton; }
 
-    public JButton getHintButton() {return HintButton;}
+    public JButton getHintButton() { return HintButton; }
 
-    public JCheckBox getValidationCheckBox() {return ValidationCB;}
+    public JCheckBox getValidationCheckBox() { return ValidationCB; }
 
-    public JCheckBox getHintCheckBox() {return HintCB;}
+    public JCheckBox getHintCheckBox() { return HintCB; }
 
-    public JCheckBox getRandomCheckBox() {return RandomCB;}
+    public JCheckBox getRandomCheckBox() { return RandomCB; }
 
-    public JButton getDigitButton(int digital) {return digitButtons[digital - 1];}
+    public JButton getDigitButton(int digital) { return digitButtons[digital - 1]; }
 
-    public void setStatusText(String text) {status.setText(text);}
+    public void setStatusText(String text) { status.setText(text); }
 }
