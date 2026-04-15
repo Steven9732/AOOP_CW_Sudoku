@@ -113,7 +113,7 @@ final class Board {
     private boolean[][] computeInvalidCells() {
         boolean[][] invalidCell = new boolean[SIZE][SIZE];
 
-        // rows
+        // Check rows
         for (int row = 0; row < SIZE; row++) {
             int[] count = new int[10];
             for (int column = 0; column < SIZE; column++) {
@@ -124,13 +124,13 @@ final class Board {
             }
             for (int column = 0; column < SIZE; column++) {
                 int value = board[row][column];
-                if (value != 0 && count[column] > 1) {
+                if (value != 0 && count[value] > 1) {
                     invalidCell[row][column] = true;
                 }
             }
         }
 
-        // Columns
+        // Check columns
         for (int column = 0; column < SIZE; column++) {
             int[] count = new int[10];
             for (int row = 0; row < SIZE; row++) {
@@ -141,36 +141,39 @@ final class Board {
             }
             for (int row = 0; row < SIZE; row++) {
                 int value = board[row][column];
-                if (value != 0 && count[column] > 1) {
+                if (value != 0 && count[value] > 1) {
                     invalidCell[row][column] = true;
                 }
             }
         }
 
-        // 3x3 subgrid
-        for (int boxR = 0; boxR < 3; boxR++) {
-            for (int boxC = 0; boxC < 3; boxC++) {
+        // Check 3x3 sub-grids
+        for (int boxRow = 0; boxRow < 3; boxRow++) {
+            for (int boxColumn = 0; boxColumn < 3; boxColumn++) {
                 int[] count = new int[10];
-                int r0 = boxR * 3;
-                int c0 = boxC * 3;
-                for (int rowInBox = 0; rowInBox < 3; rowInBox++) {
-                    for (int columnInBox = 0; columnInBox < 3; columnInBox++) {
-                        int value = board[r0 + rowInBox][c0 + columnInBox];
+                int startRow = boxRow * 3;
+                int startColumn = boxColumn * 3;
+
+                for (int dr = 0; dr < 3; dr++) {
+                    for (int dc = 0; dc < 3; dc++) {
+                        int value = board[startRow + dr][startColumn + dc];
                         if (value != 0) {
                             count[value]++;
                         }
                     }
                 }
-                for (int rowInBox = 0; rowInBox < 3;  rowInBox++) {
-                    for (int columnInBox = 0; columnInBox < 3; columnInBox++) {
-                        int value = board[r0 + rowInBox][c0 + columnInBox];
-                        if  (value != 0 && count[value] > 1) {
-                            invalidCell[r0 + rowInBox][c0 + columnInBox] = true;
+
+                for (int dr = 0; dr < 3; dr++) {
+                    for (int dc = 0; dc < 3; dc++) {
+                        int value = board[startRow + dr][startColumn + dc];
+                        if (value != 0 && count[value] > 1) {
+                            invalidCell[startRow + dr][startColumn + dc] = true;
                         }
                     }
                 }
             }
         }
+
         return invalidCell;
     }
 
