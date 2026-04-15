@@ -1,16 +1,13 @@
 package org.sudoku.controller;
 
 import java.awt.event.KeyAdapter;
-import java.util.Observable;
-import java.util.Observer;
 
 import org.sudoku.model.Model;
 import org.sudoku.view.SudokuFrame;
 
 import javax.swing.*;
 
-@SuppressWarnings("depreciation")
-public final class SudokuController implements Observer {
+public final class SudokuController {
     private final Model model;
     private final SudokuFrame frame;
 
@@ -21,9 +18,6 @@ public final class SudokuController implements Observer {
         this.model = model;
         this.frame = frame;
 
-        // Observe model changes
-        model.addObserver(this);
-
         frame.getBoardPanel().setCellClickHandler((row, column) -> {
             selectedRow = row;
             selectedColumn = column;
@@ -33,7 +27,7 @@ public final class SudokuController implements Observer {
 
         // 5 buttons
         frame.getEraseButton().addActionListener(new EraseAction(model, () -> selectedRow, () -> selectedColumn));
-        frame.getUndoButton().addActionListener(new UndoAction((model)));
+        frame.getUndoButton().addActionListener(new UndoAction(model));
         frame.getHintButton().addActionListener(new HintAction(model));
         frame.getResetButton().addActionListener(new ResetAction(model));
         frame.getNewGameButton().addActionListener(new NewGameAction(model));
@@ -67,6 +61,7 @@ public final class SudokuController implements Observer {
         frame.setFocusable(true);
         frame.requestFocusInWindow();
         frame.addKeyListener(new KeyAdapter() {
+            @Override
             public void keyTyped(java.awt.event.KeyEvent e) {
                 if (selectedRow < 0 || selectedColumn < 0) return;
 
@@ -77,6 +72,7 @@ public final class SudokuController implements Observer {
                 }
             }
 
+            @Override
             public void keyPressed(java.awt.event.KeyEvent e) {
                 if (selectedRow < 0 || selectedColumn < 0) return;
 
@@ -89,24 +85,22 @@ public final class SudokuController implements Observer {
         });
     }
 
-    // Update states
-    public void update(Observable o, Object arg) {
-        SwingUtilities.invokeLater(() -> {
-            refreshView();
-            if (model.consumeCompletionEvent()) {
-                JOptionPane.showMessageDialog(frame, "Solved", "Sudoku", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
+    public void handleModelChanged() {
+        refreshView();
+        if (model.consumeCompletionEvent()) {
+            JOptionPane.showMessageDialog(frame, "Solved", "Sudoku", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
-    // Refresh window
     private void refreshView() {
         frame.getBoardPanel().setSelectedCell(selectedRow, selectedColumn);
         frame.getBoardPanel().refreshFromModel(model);
 
-        String selected = (selectedRow < 0) ? "no selection" : ("selected = (" + (selectedRow + 1) + ", " + (selectedColumn + 1) + ")");
+        String selected = (selectedRow < 0)
+                ? "no selection"
+                : ("selected = (" + (selectedRow + 1) + ", " + (selectedColumn + 1) + ")");
         String valid = model.isBoardValid() ? "valid" : "invalid";
         String solved = model.isSolved() ? "solved" : " ";
-        frame.setStatusText(selected +  " | " + valid + (solved.isEmpty() ? "" : " | " + solved));
+        frame.setStatusText(selected + " | " + valid + (solved.isEmpty() ? "" : " | " + solved));
     }
 }
