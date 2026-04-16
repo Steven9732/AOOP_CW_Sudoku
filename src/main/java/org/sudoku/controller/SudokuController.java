@@ -5,8 +5,6 @@ import java.awt.event.KeyAdapter;
 import org.sudoku.model.Model;
 import org.sudoku.view.SudokuFrame;
 
-import javax.swing.*;
-
 public final class SudokuController {
     private final Model model;
     private final SudokuFrame frame;
@@ -85,11 +83,9 @@ public final class SudokuController {
         });
     }
 
-    public void handleModelChanged() {
+    public boolean handleModelChanged() {
         refreshView();
-        if (model.consumeCompletionEvent()) {
-            JOptionPane.showMessageDialog(frame, "Solved", "Sudoku", JOptionPane.INFORMATION_MESSAGE);
-        }
+        return model.consumeCompletionEvent();
     }
 
     private void refreshView() {
