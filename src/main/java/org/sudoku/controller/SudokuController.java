@@ -1,6 +1,7 @@
 package org.sudoku.controller;
 
 import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 import org.sudoku.model.Model;
 import org.sudoku.view.SudokuFrame;
@@ -60,8 +61,10 @@ public final class SudokuController {
         frame.requestFocusInWindow();
         frame.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyTyped(java.awt.event.KeyEvent e) {
-                if (selectedRow < 0 || selectedColumn < 0) return;
+            public void keyTyped(KeyEvent e) {
+                if (selectedRow < 0 || selectedColumn < 0) {
+                    return;
+                }
 
                 char ch = e.getKeyChar();
                 if (ch >= '1' && ch <= '9') {
@@ -71,13 +74,21 @@ public final class SudokuController {
             }
 
             @Override
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (selectedRow < 0 || selectedColumn < 0) return;
-
+            public void keyPressed(KeyEvent e) {
                 int code = e.getKeyCode();
-                if (code == java.awt.event.KeyEvent.VK_BACK_SPACE ||
-                        code == java.awt.event.KeyEvent.VK_DELETE) {
-                    model.clearValue(selectedRow, selectedColumn);
+
+                switch (code) {
+                    case KeyEvent.VK_UP -> moveSelection(-1, 0);
+                    case KeyEvent.VK_DOWN -> moveSelection(1, 0);
+                    case KeyEvent.VK_LEFT -> moveSelection(0, -1);
+                    case KeyEvent.VK_RIGHT -> moveSelection(0, 1);
+                    case KeyEvent.VK_BACK_SPACE, KeyEvent.VK_DELETE -> {
+                        if (selectedRow >= 0 && selectedColumn >= 0) {
+                            model.clearValue(selectedRow, selectedColumn);
+                        }
+                    }
+                    default -> {
+                    }
                 }
             }
         });
@@ -88,6 +99,19 @@ public final class SudokuController {
         return model.consumeCompletionEvent();
     }
 
+    private void moveSelection(int deltaRow, int deltaColumn) {
+        if (selectedRow < 0 || selectedColumn < 0) {
+            selectedRow = 0;
+            selectedColumn = 0;
+        } else {
+            selectedRow = Math.max(0, Math.min(Model.SIZE - 1, selectedRow + deltaRow));
+            selectedColumn = Math.max(0, Math.min(Model.SIZE - 1, selectedColumn + deltaColumn));
+        }
+
+        refreshView();
+        frame.requestFocusInWindow();
+    }
+
     private void refreshView() {
         frame.getBoardPanel().setSelectedCell(selectedRow, selectedColumn);
         frame.getBoardPanel().refreshFromModel(model);
@@ -96,7 +120,7 @@ public final class SudokuController {
                 ? "no selection"
                 : ("selected = (" + (selectedRow + 1) + ", " + (selectedColumn + 1) + ")");
         String valid = model.isBoardValid() ? "valid" : "invalid";
-        String solved = model.isSolved() ? "solved" : " ";
+        String solved = model.isSolved() ? "solved" : "";
         frame.setStatusText(selected + " | " + valid + (solved.isEmpty() ? "" : " | " + solved));
     }
 }
