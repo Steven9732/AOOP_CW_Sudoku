@@ -89,7 +89,12 @@ public final class SudokuFrame extends JFrame implements Observer {
         if (controller == null) {
             return;
         }
-        SwingUtilities.invokeLater(() -> controller.handleModelChanged());
+        SwingUtilities.invokeLater(() -> {
+            boolean solvedNow = controller.handleModelChanged();
+            if (solvedNow) {
+                JOptionPane.showMessageDialog(this, "Solved", "Sudoku", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
     }
 
     private static JLabel sectionTitle(String title) {
