@@ -6,6 +6,8 @@ import java.awt.event.KeyEvent;
 import org.sudoku.model.Model;
 import org.sudoku.view.SudokuFrame;
 
+import javax.swing.JButton;
+
 public final class SudokuController {
     private final Model model;
     private final SudokuFrame frame;
@@ -65,6 +67,9 @@ public final class SudokuController {
                 if (selectedRow < 0 || selectedColumn < 0) {
                     return;
                 }
+                if (!model.canBeEdit(selectedRow, selectedColumn)) {
+                    return;
+                }
 
                 char ch = e.getKeyChar();
                 if (ch >= '1' && ch <= '9') {
@@ -83,7 +88,7 @@ public final class SudokuController {
                     case KeyEvent.VK_LEFT -> moveSelection(0, -1);
                     case KeyEvent.VK_RIGHT -> moveSelection(0, 1);
                     case KeyEvent.VK_BACK_SPACE, KeyEvent.VK_DELETE -> {
-                        if (selectedRow >= 0 && selectedColumn >= 0) {
+                        if (selectedRow >= 0 && selectedColumn >= 0 && model.canBeEdit(selectedRow, selectedColumn)) {
                             model.clearValue(selectedRow, selectedColumn);
                         }
                     }
@@ -115,6 +120,7 @@ public final class SudokuController {
     private void refreshView() {
         frame.getBoardPanel().setSelectedCell(selectedRow, selectedColumn);
         frame.getBoardPanel().refreshFromModel(model);
+        updateControlStates();
 
         String selected = (selectedRow < 0)
                 ? "no selection"
@@ -122,5 +128,27 @@ public final class SudokuController {
         String valid = model.isBoardValid() ? "valid" : "invalid";
         String solved = model.isSolved() ? "solved" : "";
         frame.setStatusText(selected + " | " + valid + (solved.isEmpty() ? "" : " | " + solved));
+    }
+
+    private void updateControlStates() {
+        boolean hasSelection = selectedRow >= 0 && selectedColumn >= 0;
+        boolean selectedEditable = hasSelection && model.canBeEdit(selectedRow, selectedColumn);
+        boolean selectedNonEmptyEditable = selectedEditable && !model.isEmpty(selectedRow, selectedColumn);
+
+        frame.getEraseButton().setEnabled(selectedNonEmptyEditable);
+        frame.getUndoButton().setEnabled(model.canUndo());
+        frame.getHintButton().setEnabled(model.canApplyHint());
+
+        for (int i = 1; i <= 9; i++) {
+            JButton button = frame.getDigitButton(i);
+            button.setEnabled(selectedEditable);
+        }
+
+        frame.getResetButton().setEnabled(true);
+        frame.getNewGameButton().setEnabled(true);
+
+        frame.getValidationCheckBox().setEnabled(true);
+        frame.getHintCheckBox().setEnabled(true);
+        frame.getRandomCheckBox().setEnabled(true);
     }
 }
