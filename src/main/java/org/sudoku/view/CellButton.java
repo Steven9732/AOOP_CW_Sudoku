@@ -1,6 +1,7 @@
 package org.sudoku.view;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
 
@@ -8,14 +9,21 @@ final class CellButton extends JButton {
     final int row;
     final int column;
 
+    private Border normalBorder;
+
     public CellButton(int row, int column) {
         super("");
         this.row = row;
         this.column = column;
         setFont(getFont().deriveFont(Font.PLAIN, 12f));
         setHorizontalAlignment(SwingConstants.CENTER);
-        setMargin(new Insets(0,0,0,0));
+        setMargin(new Insets(0, 0, 0, 0));
         setFocusPainted(false);
+    }
+
+    void setNormalBorder(Border border) {
+        this.normalBorder = border;
+        setBorder(border);
     }
 
     void applyStyle(boolean fixed, boolean invalid, boolean selected) {
@@ -33,6 +41,8 @@ final class CellButton extends JButton {
 
         if (selected) {
             setBorder(new MatteBorder(3, 3, 3, 3, new Color(60, 120, 255)));
+        } else if (normalBorder != null) {
+            setBorder(normalBorder);
         }
     }
 }
