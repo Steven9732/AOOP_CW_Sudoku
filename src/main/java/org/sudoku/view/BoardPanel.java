@@ -50,7 +50,7 @@ public class BoardPanel extends JPanel {
                 int bottom = (finalRow == 8) ? 3 : 1;
                 int right = (finalColumn == 8) ? 3 : 1;
                 Border border = new MatteBorder(top, left, bottom, right, Color.DARK_GRAY);
-                b.setBorder(border);
+                b.setNormalBorder(border);
                 cells[row][column] = b;
                 add(b);
             }
