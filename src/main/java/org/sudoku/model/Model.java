@@ -266,6 +266,11 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
+    @Override
+    public boolean canUndo() {
+        return !history.isEmpty();
+    }
+
     // Set the game to the initial state
     @Override
     public boolean reset() {
@@ -297,6 +302,20 @@ public final class Model extends Observable implements SudokuModel {
                     updateCompletionStateAfterBoardChange();
                     changed();
                     assertInvariants();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canApplyHint() {
+        if (!hintEnabled) return false;
+        if (solution == null) return false;
+        for (int row = 0; row < SIZE; row++) {
+            for (int column = 0; column < SIZE; column++) {
+                if (board.canBeEdit(row, column) && board.isEmpty(row, column)) {
                     return true;
                 }
             }

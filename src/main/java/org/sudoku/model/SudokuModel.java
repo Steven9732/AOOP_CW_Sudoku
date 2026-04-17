@@ -3,25 +3,27 @@ package org.sudoku.model;
 public interface SudokuModel {
     void newGame();
 
-    int getCellValue(int row, int column); // Get value of a specific cell
+    int getCellValue(int row, int column);
 
-    boolean isFixed(int row, int column); // Check whether a specific cell is fixed
+    boolean isFixed(int row, int column);
 
-    boolean isEmpty(int row, int column); // Check whether the cell is empty
+    boolean isEmpty(int row, int column);
 
-    boolean canBeEdit(int row, int column); // Check whether grids can be edited
+    boolean canBeEdit(int row, int column);
 
-    boolean setValue(int row, int column, int value); // Modify modifiable value
+    boolean setValue(int row, int column, int value);
 
-    boolean clearValue(int row, int column); // Erase value in selected cell
+    boolean clearValue(int row, int column);
 
     boolean undo();
+
+    boolean canUndo();
 
     boolean reset();
 
     boolean isValidationFeedbackEnabled();
 
-    void setValidationFeedbackEnabled(boolean validationFeedbackEnabled); // To determine whether the cell with wrong answer need to be highlighted
+    void setValidationFeedbackEnabled(boolean validationFeedbackEnabled);
 
     boolean isBoardValid();
 
@@ -36,6 +38,8 @@ public interface SudokuModel {
     boolean isRandomPuzzleSelectionEnabled();
 
     boolean applyHint();
+
+    boolean canApplyHint();
 
     boolean isHintEnabled();
 
