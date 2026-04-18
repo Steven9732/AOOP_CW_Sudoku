@@ -36,6 +36,11 @@ public final class Model extends Observable implements SudokuModel {
         }
     }
 
+    private void recordSingleUndo(int row, int col, int oldValue, int newValue) {
+        history.clear();
+        history.push(new Move(row, col, oldValue, newValue));
+    }
+
     public Model() {
         this.puzzles = Collections.unmodifiableList(
                 PuzzleLoader.loadPuzzlesFromFile("puzzles.txt")
@@ -126,7 +131,7 @@ public final class Model extends Observable implements SudokuModel {
             return true;
         }
 
-        history.push(new Move(row, column, oldCellValue, value));
+        recordSingleUndo(row, column, oldCellValue, value);
         updateCompletionStateAfterBoardChange();
         changed();
         assert board.getCellValue(row, column) == value : "Change is not successful";
@@ -147,7 +152,7 @@ public final class Model extends Observable implements SudokuModel {
             return true;
         }
 
-        history.push(new Move(row, column, oldCellValue, 0));
+        recordSingleUndo(row, column, oldCellValue, 0);
         updateCompletionStateAfterBoardChange();
         changed();
         assert board.getCellValue(row, column) == 0 : "Clear is not successful";
@@ -296,7 +301,7 @@ public final class Model extends Observable implements SudokuModel {
                     int oldValue = board.getCellValue(row, column);
                     int correctValue = solution[row][column];
 
-                    history.push(new Move(row, column, oldValue, correctValue));
+                    recordSingleUndo(row, column, oldValue, correctValue);
                     board.setValue(row, column, correctValue);
 
                     updateCompletionStateAfterBoardChange();
