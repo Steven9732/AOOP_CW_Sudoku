@@ -52,7 +52,10 @@ public class CLIMain {
 
                     }
                     case "hint" -> {
-                        boolean applyHint = model.applyHint();
+                        requiredInputLength(token, 3);
+                        int row = parseInt(token[1], "row") - 1;
+                        int column = parseInt(token[2], "column") - 1;
+                        boolean applyHint = model.applyHint(row, column);
                         stateChanged = applyHint;
                     }
                     case "reset" -> {
@@ -103,18 +106,18 @@ public class CLIMain {
 
     // Show the commands
     private static void printCommands () {
-            System.out.println("""
-                Commands:
-                  help          (show all commands)
-                  show
-                  set row column value        (row, column, value are 1..9)
-                  clear row column        (or: erase row column)
-                  undo
-                  hint
-                  reset
-                  new              (or: newgame)
-                  quit
-                """);
+        System.out.println("""
+            Commands:
+              help          (show all commands)
+              show
+              set row column value        (row, column, value are 1..9)
+              clear row column            (or: erase row column)
+              undo
+              hint row column
+              reset
+              new                         (or: newgame)
+              quit
+            """);
     }
 
     // Parse string to integer
