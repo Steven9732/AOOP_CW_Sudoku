@@ -59,7 +59,7 @@ public class CLIMain {
                         boolean reset = model.reset();
                         stateChanged = reset;
                     }
-                    case "new", "newGame" -> {
+                    case "new", "newgame" -> {
                         model.newGame();
                         stateChanged = true;
                     }
