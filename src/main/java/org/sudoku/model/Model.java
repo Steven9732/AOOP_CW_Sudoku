@@ -291,41 +291,34 @@ public final class Model extends Observable implements SudokuModel {
 
     // Give hint to player
     @Override
-    public boolean applyHint() {
-        if (!hintEnabled) return false;
-        if (solution == null) return false;
+    public boolean applyHint(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
-        for (int row = 0; row < SIZE; row++) {
-            for (int column = 0; column < SIZE; column++) {
-                if (board.canBeEdit(row, column) && board.isEmpty(row, column)) {
-                    int oldValue = board.getCellValue(row, column);
-                    int correctValue = solution[row][column];
-
-                    recordSingleUndo(row, column, oldValue, correctValue);
-                    board.setValue(row, column, correctValue);
-
-                    updateCompletionStateAfterBoardChange();
-                    changed();
-                    assertInvariants();
-                    return true;
-                }
-            }
+        if (!canApplyHint(row, column)) {
+            return false;
         }
-        return false;
+
+        int oldValue = board.getCellValue(row, column);
+        int correctValue = solution[row][column];
+
+        if (!board.setValue(row, column, correctValue)) {
+            return false;
+        }
+
+        recordSingleUndo(row, column, oldValue, correctValue);
+        updateCompletionStateAfterBoardChange();
+        changed();
+        assertInvariants();
+        return true;
     }
 
     @Override
-    public boolean canApplyHint() {
+    public boolean canApplyHint(int row, int column) {
         if (!hintEnabled) return false;
         if (solution == null) return false;
-        for (int row = 0; row < SIZE; row++) {
-            for (int column = 0; column < SIZE; column++) {
-                if (board.canBeEdit(row, column) && board.isEmpty(row, column)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        if (!inRange(row, column)) return false;
+
+        return board.canBeEdit(row, column) && board.isEmpty(row, column);
     }
 
     private static boolean isSafe(int[][] grid, int row, int column, int value) {
