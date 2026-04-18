@@ -37,9 +37,9 @@ public interface SudokuModel {
 
     boolean isRandomPuzzleSelectionEnabled();
 
-    boolean applyHint();
+    boolean applyHint(int row, int column);
 
-    boolean canApplyHint();
+    boolean canApplyHint(int row, int column);
 
     boolean isHintEnabled();
 
