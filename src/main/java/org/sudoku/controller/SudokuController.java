@@ -29,7 +29,7 @@ public final class SudokuController {
         // 5 buttons
         frame.getEraseButton().addActionListener(new EraseAction(model, () -> selectedRow, () -> selectedColumn));
         frame.getUndoButton().addActionListener(new UndoAction(model));
-        frame.getHintButton().addActionListener(new HintAction(model));
+        frame.getHintButton().addActionListener(new HintAction(model, () -> selectedRow, () -> selectedColumn));
         frame.getResetButton().addActionListener(new ResetAction(model));
         frame.getNewGameButton().addActionListener(new NewGameAction(model));
 
@@ -137,7 +137,7 @@ public final class SudokuController {
 
         frame.getEraseButton().setEnabled(selectedNonEmptyEditable);
         frame.getUndoButton().setEnabled(model.canUndo());
-        frame.getHintButton().setEnabled(model.canApplyHint());
+        frame.getHintButton().setEnabled(model.canApplyHint(selectedRow, selectedColumn));
 
         for (int i = 1; i <= 9; i++) {
             JButton button = frame.getDigitButton(i);
