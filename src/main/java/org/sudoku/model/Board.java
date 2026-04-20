@@ -116,6 +116,7 @@ final class Board {
             assert board[row][column] == oldCellValue : "Only number between 0 and 9 is accepted.";
             return false;
         }
+        // The board stays unchanged.
         if (board[row][column] == value) {
             assert oldCellValue == value;
             return true; // Don't need to notify
@@ -141,6 +142,7 @@ final class Board {
             assert board[row][column] == oldCellValue : "This cell is fixed, can't be modified";
             return false;
         }
+        // Clearing an already empty editable cell.
         if (board[row][column] == 0) {
             return true; // Don't need to notify
         }

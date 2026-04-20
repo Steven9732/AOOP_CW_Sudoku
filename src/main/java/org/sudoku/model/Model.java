@@ -64,9 +64,11 @@ public final class Model extends Observable implements SudokuModel {
      */
     public void newGame() {
         int index;
+        // Random mode picks any puzzle
         if (randomPuzzleSelectionEnabled) {
             index = random.nextInt(this.puzzles.size());
         } else {
+            // Non-random mode advances through the list in order
             index = (currentPuzzleIndex + 1) % puzzles.size();
         }
         newGame(index);
@@ -79,16 +81,19 @@ public final class Model extends Observable implements SudokuModel {
     private void newGame(int currentPuzzleIndex) {
         assert currentPuzzleIndex >= 0 && currentPuzzleIndex < puzzles.size() : "Puzzle index out of bounds";
 
+        // Load the selected puzzle and rebuild all game state from it.
         Puzzle puzzle = puzzles.get(currentPuzzleIndex);
         int[][] givens = puzzle.givenGrid();
         this.currentPuzzleIndex = currentPuzzleIndex;
         this.initial = Board.deepCopy(givens);
         this.board = new Board(givens);
 
+        // A new puzzle starts with a clean undo history and no pending completion event.
         history.clear();
         solved = false;
         completionEventPending = false;
 
+        // Build a solved reference grid once.
         solution = Board.deepCopy(initial);
         if (!solveInPlace(solution)) {
             throw new IllegalStateException("Puzzle has no solution");
@@ -187,6 +192,7 @@ public final class Model extends Observable implements SudokuModel {
             assert getCellValue(row, column) == oldCellValue : "Rejected writes must not change the board.";
             return false;
         }
+        // The request is accepted, but no real state change, so no undo record or notification is needed.
         if (oldCellValue == value) {
             assert getCellValue(row, column) == value : "Cell value should stay unchanged.";
             return true;
@@ -222,6 +228,7 @@ public final class Model extends Observable implements SudokuModel {
             assert getCellValue(row, column) == oldCellValue : "Rejected clears must not change the board.";
             return false;
         }
+        // Nothing changes, so there is no undo record and no observer notification.
         if  (oldCellValue == 0) {
             assert getCellValue(row, column) == 0 : "Empty cell should remain empty.";
             return true;
@@ -333,6 +340,7 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures !completionEventPending;
       @*/
     public boolean consumeCompletionEvent() {
+        // Once the event is read, the pending flag is cleared.
         if (completionEventPending) {
             completionEventPending = false;
             return true;
@@ -414,6 +422,7 @@ public final class Model extends Observable implements SudokuModel {
     public boolean undo() {
         if (history.isEmpty()) return false;
 
+        // Get the previous value of the most recent accepted board change.
         Move latestMove = history.pop();
         boolean restored = board.setValue(latestMove.row, latestMove.col, latestMove.oldValue);
         assert restored : "There must have a record of action";
@@ -556,10 +565,11 @@ public final class Model extends Observable implements SudokuModel {
      * @return true if a solution is found
      */
     private static boolean solveInPlace(int[][] grid) {
+        // Get all empty cells.
         int[] pos = findEmpty(grid);
         if (pos == null) return true; // solved
 
-        int r = pos[0], c = pos[1];
+        int r = pos[0], c = pos[1]; // Undo the trial value and continue searching
         for (int v = 1; v <= 9; v++) {
             if (isSafe(grid, r, c, v)) {
                 grid[r][c] = v;
