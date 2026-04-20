@@ -17,11 +17,16 @@ public class EraseAction implements ActionListener{
         this.selectedColumn = selectedColumn;
     }
 
+    /**
+     * Clears the selected cell when a valid selection exists.
+     * @param e the erase action to be processed
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         int row = selectedRow.getAsInt();
         int column = selectedColumn.getAsInt();
-        if (row < 0 || column < 0) return;
+        assert row >= 0 && row < Model.SIZE : "Selected row is out of bounds";
+        assert column >= 0 && column < Model.SIZE : "Selected column is out of bounds";
         model.clearValue(row, column);
     }
 }
