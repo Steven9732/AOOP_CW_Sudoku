@@ -12,6 +12,10 @@ public class ResetAction implements ActionListener{
         this.model = model;
     }
 
+    /**
+     * Resets the current game.
+     * @param e the event to be processed
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         model.reset();

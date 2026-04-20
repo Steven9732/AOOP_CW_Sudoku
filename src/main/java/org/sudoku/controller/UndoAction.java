@@ -12,6 +12,10 @@ public class UndoAction implements ActionListener{
         this.model = model;
     }
 
+    /**
+     * Undo the latest move.
+     * @param e the event to be processed
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         model.undo();

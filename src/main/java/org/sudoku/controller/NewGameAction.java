@@ -12,6 +12,10 @@ public class NewGameAction implements ActionListener{
         this.model = model;
     }
 
+    /**
+     * Starts a new game.
+     * @param e the event to be processed
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         model.newGame();
