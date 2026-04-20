@@ -12,8 +12,14 @@ final class PuzzleLoader {
 
     private PuzzleLoader() {}
 
+    /**
+     * Loads all puzzles from one classpath text file.
+     * @param filename filename classpath file name
+     * @return list of parsed puzzles
+     */
     static List<Puzzle> loadPuzzlesFromFile(String filename) {
-        List<String> lines = readAllLinesClasspathFitst(filename);
+        assert filename != null && !filename.isBlank() : "Filename must not be null or blank.";
+        List<String> lines = readAllLinesClasspathFirst(filename);
         List<Puzzle> puzzles = new ArrayList<>();
 
         for (String rawLine : lines) {
@@ -28,7 +34,10 @@ final class PuzzleLoader {
         return puzzles;
     }
 
-    private static List<String> readAllLinesClasspathFitst(String filename) {
+    /**
+     * Reads all lines from one text resource in the classpath.
+     */
+    private static List<String> readAllLinesClasspathFirst(String filename) {
         InputStream inputStream = PuzzleLoader.class.getClassLoader().getResourceAsStream(filename);
         if (inputStream == null) {
             throw new IllegalArgumentException("File " + filename + " not found");

@@ -23,7 +23,9 @@ public final class Model extends Observable implements SudokuModel {
     private final Deque<Move> history = new ArrayDeque<>();
     private int[][] solution; // The solution for current puzzle
 
-    // Used for cell modification recording
+    /**
+     * Store user movement for single-level undo
+     */
     private static final class Move {
         final int row, col;
         final int oldValue, newValue;
@@ -36,11 +38,17 @@ public final class Model extends Observable implements SudokuModel {
         }
     }
 
+    /**
+     * Replaces any previous undo history with one newly recorded move.
+     */
     private void recordSingleUndo(int row, int col, int oldValue, int newValue) {
         history.clear();
         history.push(new Move(row, col, oldValue, newValue));
     }
 
+    /**
+     * Constructor of Model class.
+     */
     public Model() {
         this.puzzles = Collections.unmodifiableList(
                 PuzzleLoader.loadPuzzlesFromFile("puzzles.txt")
@@ -51,7 +59,9 @@ public final class Model extends Observable implements SudokuModel {
         newGame();
     }
 
-    // Load a new random puzzle
+    /**
+     * Replaces the current board with a new puzzle.
+     */
     public void newGame() {
         int index;
         if (randomPuzzleSelectionEnabled) {
@@ -62,6 +72,10 @@ public final class Model extends Observable implements SudokuModel {
         newGame(index);
     }
 
+    /**
+     * Loads a specific puzzle by index.
+     * @param currentPuzzleIndex index of the puzzle to load
+     */
     private void newGame(int currentPuzzleIndex) {
         assert currentPuzzleIndex >= 0 && currentPuzzleIndex < puzzles.size() : "Puzzle index out of bounds";
 
@@ -85,49 +99,96 @@ public final class Model extends Observable implements SudokuModel {
         assertInvariants();
     }
 
-    // Ensure input value is in legal range
-    private static boolean isValidDigit(int value) {
-        return value >= 0 && value <= 9;
-    }
-
-    // Notify observers when the status of model being changed
+    /**
+     * Marks the model as changed and notifies all observers.
+     */
     private void changed() {
         setChanged();
         notifyObservers();
     }
 
-    // Ensure the data is in the range of bounds
+    /**
+     * Returns whether a cell address is inside the 9x9 board.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if rows and columns are in the board
+     */
     private static boolean inRange(int row, int column) {
         return row >= 0 && row < SIZE && column >= 0 && column < SIZE;
     }
 
-    // Get value of a specific cell
+    /**
+     * Returns the current value stored in one cell
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return the current value, where 0 means empty
+     */
+    /*@@
+       @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+       @ ensures 0 <= \result && \result <= 9;
+     */
     @Override
     public int getCellValue(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board.getCellValue(row, column);
     }
 
-    // Check whether a specific cell is fixed
+    /**
+     * Returns whether a cell is fixed by the original puzzle.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the cell is a given cell
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ ensures \result <==> initial[row][column] != 0;
+      @*/
     @Override
     public boolean isFixed(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board.isFixed(row, column);
     }
 
-    // Check whether grids can be edited
+    /**
+     * Returns whether a cell is editable by the player.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the cell is not fixed
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ ensures \result <==> !isFixed(row, column);
+      @*/
     public boolean canBeEdit(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board.canBeEdit(row, column);
     }
 
-    // Modify modifiable value
+    /**
+     * Writes a value into one editable cell.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @param value value to write
+     * @return true if the request is accepted, otherwise false
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ assignable board, history, solved, completionEventPending;
+      @ ensures !\result ==> getCellValue(row, column) == \old(getCellValue(row, column));
+      @ ensures \result && 0 <= value && value <= 9 && !isFixed(row, column) ==> getCellValue(row, column) == value;
+      @ ensures \result && \old(getCellValue(row, column)) != value && 0 <= value && value <= 9 && !isFixed(row, column) ==> canUndo();
+      @*/
     public boolean setValue(int row, int column, int value) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
         int oldCellValue = getCellValue(row, column);
 
         if (!board.setValue(row, column, value)) {
+            assert getCellValue(row, column) == oldCellValue : "Rejected writes must not change the board.";
             return false;
         }
         if (oldCellValue == value) {
+            assert getCellValue(row, column) == value : "Cell value should stay unchanged.";
             return true;
         }
 
@@ -139,16 +200,30 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
-    // Erase value in selected cell
+    /**
+     * Clears one editable cell.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the request is accepted, otherwise false
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ assignable board, history, solved, completionEventPending;
+      @ ensures !\result ==> getCellValue(row, column) == \old(getCellValue(row, column));
+      @ ensures \result ==> getCellValue(row, column) == 0;
+      @ ensures \result && \old(getCellValue(row, column)) != 0 ==> canUndo();
+      @*/
     public boolean clearValue(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
         int  oldCellValue = getCellValue(row, column);
 
         if  (!board.clearValue(row, column)) {
+            assert getCellValue(row, column) == oldCellValue : "Rejected clears must not change the board.";
             return false;
         }
         if  (oldCellValue == 0) {
+            assert getCellValue(row, column) == 0 : "Empty cell should remain empty.";
             return true;
         }
 
@@ -160,16 +235,37 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
-    // Return true if the cell is empty
+    /**
+     * Returns whether a cell is currently empty.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the cell value is 0
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ ensures \result <==> getCellValue(row, column) == 0;
+      @*/
     public boolean isEmpty(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board.isEmpty(row, column);
     }
 
+    /**
+     * @return whether validation feedback is enabled.
+     */
+    /*@ ensures \result <==> validationFeedbackEnabled; @*/
     public boolean isValidationFeedbackEnabled() {
         return validationFeedbackEnabled;
     }
 
-    // To determine whether the cell with wrong answer need to be highlighted
+    /**
+     * Enables or disables validation feedback.
+     * @param validationFeedbackEnabled true to enable immediate invalid-cell feedback
+     */
+    /*@
+      @ assignable validationFeedbackEnabled;
+      @ ensures isValidationFeedbackEnabled() == enabled;
+      @*/
     public void setValidationFeedbackEnabled(boolean validationFeedbackEnabled) {
         if (this.validationFeedbackEnabled == validationFeedbackEnabled) return;
         this.validationFeedbackEnabled = validationFeedbackEnabled;
@@ -177,18 +273,36 @@ public final class Model extends Observable implements SudokuModel {
         assertInvariants();
     }
 
-    // Ensure no duplicates number in any row, column and 3x3 grid
+    /**
+     * @return whether the board currently has no duplicate non-zero values.
+     */
+    /*@
+      @ ensures \result <==> (\forall int r, c; 0 <= r && r < SIZE && 0 <= c && c < SIZE;
+      @ ensures !isCellInvalid(r, c));
+      @*/
     @Override
     public boolean isBoardValid() {
         return board.isBoardValid();
     }
 
-    // Returns true if input number is duplicated
+    /**
+     * Returns whether one cell is currently invalid because of duplication.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the cell is duplicated in its row, column, or box
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ ensures isEmpty(row, column) ==> !\result;
+      @*/
     public boolean isCellInvalid(int row, int column) {
+        assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board.isCellInvalid(row, column);
     }
 
-    // Check whether game is initialize correctly
+    /**
+     * Checks that the board was loaded exactly from the selected givens.
+     */
     private boolean postNewGameCheck(int[][] givens) {
         for  (int row = 0; row < SIZE; row++) {
             for (int column = 0; column < SIZE; column++) {
@@ -200,12 +314,24 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
-    // Check whether the current puzzle is solved
+    /**
+     * Returns whether the puzzle is solved.
+     * @return true if the puzzle is solved
+     */
+    /*@ ensures \result <==> solved; @*/
     public boolean isSolved() {
         return solved;
     }
 
-    // Return true when puzzle is solved
+    /**
+     * Consumes the one-shot completion event used by the UI.
+     * @return true once after the puzzle becomes solved
+     */
+    /*@
+      @ assignable completionEventPending;
+      @ ensures \result <==> \old(completionEventPending);
+      @ ensures !completionEventPending;
+      @*/
     public boolean consumeCompletionEvent() {
         if (completionEventPending) {
             completionEventPending = false;
@@ -214,7 +340,9 @@ public final class Model extends Observable implements SudokuModel {
         return false;
     }
 
-    // Check whether the board is full
+    /**
+     * Returns whether the board contains no empty cells.
+     */
     private boolean isBoardFull() {
         for  (int row = 0; row < SIZE; row++) {
             for (int column = 0; column < SIZE; column++) {
@@ -224,12 +352,16 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
-    // Ensure the board is full and valid
+    /**
+     * Returns whether the current board is both full and valid.
+     */
     private boolean isCompletedAndValid() {
         return isBoardFull() && isBoardValid();
     }
 
-    // Updates status of current game
+    /**
+     * Updates solved-state flags after a board change.
+     */
     private void updateCompletionStateAfterBoardChange() {
         boolean wasSolved = solved;
         solved = isCompletedAndValid();
@@ -239,6 +371,14 @@ public final class Model extends Observable implements SudokuModel {
         }
     }
 
+    /**
+     * Enables or disables random puzzle selection.
+     * @param enabled true to load a random puzzle, false to load one by one
+     */
+    /*@
+      @ assignable randomPuzzleSelectionEnabled;
+      @ ensures isRandomPuzzleSelectionEnabled() == enabled;
+      @*/
     public void setRandomPuzzleSelectionEnabled(boolean enabled) {
         if (this.randomPuzzleSelectionEnabled == enabled) return; // Ensure the status is really changed
         this.randomPuzzleSelectionEnabled = enabled;
@@ -246,12 +386,15 @@ public final class Model extends Observable implements SudokuModel {
         assertInvariants();
     }
 
-    // Get the status of the puzzle selection
-    public boolean isRandomPuzzleSelectionEnabled() {return randomPuzzleSelectionEnabled;}
-
-    // Get the status of whether hint is enabled
-    public boolean isHintEnabled() {return hintEnabled;}
-
+    /**
+     * Enables or disables the hint feature.
+     *
+     * @param enabled true to allow hints
+     */
+    /*@
+      @ assignable hintEnabled;
+      @ ensures isHintEnabled() == enabled;
+      @*/
     public void setHintEnabled(boolean enabled) {
         if (this.hintEnabled == enabled) return; // Ensure the status is really changed
         this.hintEnabled = enabled;
@@ -259,24 +402,48 @@ public final class Model extends Observable implements SudokuModel {
         assertInvariants();
     }
 
-    // Undo the last step
+    /**
+     * Reverts the most recent accepted board-changing action.
+     * @return true if one move is undone, otherwise false
+     */
+    /*@
+      @ assignable board, history, solved, completionEventPending;
+      @ ensures !\old(canUndo()) ==> !\result;
+      @ ensures \result ==> !canUndo();
+      @*/
     public boolean undo() {
         if (history.isEmpty()) return false;
 
-        Move lastestMove = history.pop();
-        board.setValue(lastestMove.row, lastestMove.col, lastestMove.oldValue);
+        Move latestMove = history.pop();
+        boolean restored = board.setValue(latestMove.row, latestMove.col, latestMove.oldValue);
+        assert restored : "There must have a record of action";
         updateCompletionStateAfterBoardChange();
         changed();
+        assert getCellValue(latestMove.row, latestMove.col) == latestMove.oldValue : "Undo should restore the previous value.";
         assertInvariants();
         return true;
     }
 
+    /**
+     * Returns whether a single undo action is currently available.
+     */
+    /*@ ensures \result <==> !history.isEmpty(); @*/
     @Override
     public boolean canUndo() {
         return !history.isEmpty();
     }
 
-    // Set the game to the initial state
+    /**
+     * Restores the current puzzle to its initial state.
+     * @return always true after the board is reset
+     */
+    /*@
+      @ assignable board, history, solved, completionEventPending;
+      @ ensures \result;
+      @ ensures !isSolved();
+      @ ensures !canUndo();
+      @ ensures (\forall int r, c; 0 <= r && r < SIZE && 0 <= c && c < SIZE; getCellValue(r, c) == initial[r][c]);
+      @*/
     @Override
     public boolean reset() {
         board = new Board(initial);
@@ -289,7 +456,19 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
-    // Give hint to player
+    /**
+     * Reveals the correct value for one eligible empty editable cell.
+     * @param row zero-based row index
+     * @param column zero-based column index
+     * @return true if a hint is applied, otherwise false
+     */
+    /*@
+      @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
+      @ assignable board, history, solved, completionEventPending;
+      @ ensures !\old(canApplyHint(row, column)) ==> !\result;
+      @ ensures \result ==> getCellValue(row, column) == solution[row][column];
+      @ ensures \result ==> canUndo();
+      @*/
     @Override
     public boolean applyHint(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
@@ -301,17 +480,30 @@ public final class Model extends Observable implements SudokuModel {
         int oldValue = board.getCellValue(row, column);
         int correctValue = solution[row][column];
 
-        if (!board.setValue(row, column, correctValue)) {
-            return false;
-        }
+        boolean changedCell = board.setValue(row, column, correctValue);
+        assert changedCell : "A valid hint should always be applicable to the selected cell.";
 
         recordSingleUndo(row, column, oldValue, correctValue);
         updateCompletionStateAfterBoardChange();
         changed();
+        assert getCellValue(row, column) == correctValue : "Hint should write the solved value.";
         assertInvariants();
         return true;
     }
 
+    /**
+     * Returns whether a hint may be applied to one cell.
+     * @param row zero-based row index
+     * @param column zero-based column index
+     * @return true if hints are enabled and the cell is editable and empty
+     */
+    /*@
+      @ ensures \result <==> (hintEnabled
+      @                      && 0 <= row && row < SIZE
+      @                      && 0 <= column && column < SIZE
+      @                      && canBeEdit(row, column)
+      @                      && isEmpty(row, column));
+      @*/
     @Override
     public boolean canApplyHint(int row, int column) {
         if (!hintEnabled) return false;
@@ -321,6 +513,9 @@ public final class Model extends Observable implements SudokuModel {
         return board.canBeEdit(row, column) && board.isEmpty(row, column);
     }
 
+    /**
+     * Returns whether placing a value at a position is safe in the candidate grid.
+     */
     private static boolean isSafe(int[][] grid, int row, int column, int value) {
         // Check each row
         for (int c = 0; c < SIZE; c++) {
@@ -330,7 +525,7 @@ public final class Model extends Observable implements SudokuModel {
         for (int r = 0; r < SIZE; r++) {
             if (grid[r][column] == value) {return false;}
         }
-        //chcek each box
+        //check each box
         int br = (row/3) * 3;
         int bc = (column/3) * 3;
         for (int dr = 0; dr < 3; dr++) {
@@ -341,6 +536,11 @@ public final class Model extends Observable implements SudokuModel {
         return true;
     }
 
+    /**
+     * Finds the next empty cell in a candidate grid.
+     * @param grid 9x9 candidate grid
+     * @return {row, column} for the next empty cell, or null when full
+     */
     private static int[] findEmpty(int[][] grid) {
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
@@ -350,6 +550,11 @@ public final class Model extends Observable implements SudokuModel {
         return null;
     }
 
+    /**
+     * Solves a Sudoku grid in place.
+     * @param grid 9x9 candidate grid
+     * @return true if a solution is found
+     */
     private static boolean solveInPlace(int[][] grid) {
         int[] pos = findEmpty(grid);
         if (pos == null) return true; // solved
@@ -365,7 +570,9 @@ public final class Model extends Observable implements SudokuModel {
         return false;
     }
 
-    // Check invariants
+    /**
+     * Runtime checks for the class invariants.
+     */
     private void assertInvariants() {
         assert board != null : "The game board must not be null";
         assert initial != null && initial.length == SIZE : "The initial board's row number should be 9";

@@ -11,10 +11,17 @@ final class Puzzle {
         assert is9x9(this.givens) : "The given board is 9x9";
     }
 
+    /**
+     * Returns a copy of the puzzle grid.
+     * @return copied givens grid
+     */
     int[][] givenGrid() {
         return deepCopy(givens);
     }
 
+    /**
+     * Creates a deep copy of a two-dimensional int array.
+     */
     private static int[][] deepCopy(int[][] src) {
         int[][] out = new int[src.length][];
         for (int i = 0; i < src.length; i++) {
@@ -23,7 +30,10 @@ final class Puzzle {
         return out;
     }
 
-    private static boolean is9x9(int[][] givens) {
+    /**
+     * Returns whether a grid is a valid 9x9 Sudoku grid using values 0..9.
+     */
+    protected static boolean is9x9(int[][] givens) {
         if (givens == null || givens.length != SIZE) {return false;}
         for (int row = 0; row < SIZE; row++) {
             if (givens[row] == null || givens[row].length != SIZE) {return false;}
