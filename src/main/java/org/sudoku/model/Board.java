@@ -3,17 +3,29 @@ package org.sudoku.model;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static org.sudoku.model.Puzzle.is9x9;
+
 final class Board {
     static final int SIZE = 9;
 
     private int[][] board;
     private boolean fixed[][];
 
+    /**
+     * Creates a board from the given initial puzzle.
+     * @param initial the initial 9x9 grid; non-zero cells are treated as fixed cells that users cannot modify them
+     */
     public Board(int[][] initial) {
+        assert is9x9(initial) : "Initial puzzle must be a 9x9 grid with values from 0 to 9.";
         this.board = deepCopy(initial);
         this.fixed = fixedFromInitial(initial);
     }
 
+    /**
+     * Creates a deep copy of a 2D int array.
+     * @param src the source array
+     * @return a new 2D array with copied row contents
+     */
     protected static int[][] deepCopy(int[][] src) {
         int[][] out = new int[src.length][];
         for (int i = 0; i < src.length; i++) {
@@ -22,7 +34,10 @@ final class Board {
         return out;
     }
 
-    // Grid is modifiable if initial state is 0, otherwise is unmodifiable
+    /**
+     * Builds the fixed-cell map from the initial grid.
+     * A cell is fixed if its initial value is non-zero.
+     */
     private static boolean[][] fixedFromInitial(int[][] initial) {
         boolean[][] fixedBoard = new boolean[SIZE][SIZE];
         for (int row = 0; row < SIZE; row++) {
@@ -33,36 +48,62 @@ final class Board {
         return fixedBoard;
     }
 
-    // Ensure input value is in legal range
+    /**
+     * Return whether the value is in legal range.
+     * This board accepts 0 for empty cells and 1 to 9 for fixed values.
+     */
     private static boolean isValidDigit(int value) {
         return value >= 0 && value <= 9;
     }
 
-    // Ensure the data is in the range of bounds
+    /**
+     * Return whether the selected row or column are within the board
+     */
     private static boolean inRange(int row, int column) {
         return row >= 0 && row < SIZE && column >= 0 && column < SIZE;
     }
 
-    // Get value of a specific cell
-    public int getCellValue(int row, int column) {
+    /**
+     * Returns whether the specified cell is fixed.
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return the cell value, where 0 means empty cell
+     */
+    protected int getCellValue(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board[row][column];
     }
 
-    // Check whether a specific cell is fixed
-    public boolean isFixed(int row, int column) {
+    /**
+     * Returns whether the selected cell is fixed
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the original value of a cell is from 1 to 9
+     */
+    protected boolean isFixed(int row, int column) {
         assert inRange(row, column) :  "Row or column of the game board is out of bounds";
         return fixed[row][column];
     }
 
-    // Check whether grids can be edited
-    public boolean canBeEdit(int row, int column) {
+    /**
+     * Returns whether a specific cell can be edited by users
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the cell is editable
+     */
+    protected boolean canBeEdit(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return !fixed[row][column];
     }
 
-    // Modify modifiable value
-    public boolean setValue(int row, int column, int value) {
+    /**
+     * Set a value to a selected cell
+     * @param row row index from 0
+     * @param column column index from 0
+     * @param value the new value to be assigned to a cell
+     * @return true if the request is accepted, false otherwise
+     */
+    protected boolean setValue(int row, int column, int value) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
         int oldCellValue = getCellValue(row, column);
@@ -85,8 +126,13 @@ final class Board {
         return true;
     }
 
-    // Erase value in selected cell
-    public boolean clearValue(int row, int column) {
+    /**
+     * Clears an editable value
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the request successful, false otherwise
+     */
+    protected boolean clearValue(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
         int  oldCellValue = getCellValue(row, column);
@@ -103,14 +149,22 @@ final class Board {
         return true;
     }
 
-    // Return true if the cell is empty
-    public boolean isEmpty(int row, int column) {
+    /**
+     * Return whether a cell is empty
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return ture if the value of the cell is 0
+     */
+    protected boolean isEmpty(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return board[row][column] == 0;
     }
 
-    // Computes a 9x9 map marking cells that are part of any duplicate
-    private boolean[][] computeInvalidCells() {
+    /**
+     * A cell is marked invalid if its non-zero value is duplicated in its row, column, or 3x3 sub-grid.
+     * @return a boolean map
+     */
+    protected boolean[][] computeInvalidCells() {
         boolean[][] invalidCell = new boolean[SIZE][SIZE];
 
         // Check rows
@@ -177,8 +231,11 @@ final class Board {
         return invalidCell;
     }
 
-    // Ensure no duplicates number in any row, column and 3x3 grid
-    public boolean isBoardValid() {
+    /**
+     * Returns whether the current board has no duplicates in any row, column, or box.
+     * @return true if the board without duplication
+     */
+    protected boolean isBoardValid() {
         boolean[][] invalid = computeInvalidCells();
         for  (int row = 0; row < SIZE; row++) {
             for  (int column = 0; column < SIZE; column++) {
@@ -190,13 +247,21 @@ final class Board {
         return true;
     }
 
-    // Returns true if input number is duplicated
-    public boolean isCellInvalid(int row, int column) {
+    /**
+     * Returns whether one cell is currently invalid because of duplication
+     * @param row row index from 0
+     * @param column column index from 0
+     * @return true if the cell is not duplicated
+     */
+    protected boolean isCellInvalid(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         return computeInvalidCells()[row][column];
     }
 
-    // Check whether the board is full
+    /**
+     * Returns whether every cell are fulfilled
+     * @return ture if all cells are fulfilled
+     */
     private boolean isBoardFull() {
         for  (int row = 0; row < SIZE; row++) {
             for (int column = 0; column < SIZE; column++) {
