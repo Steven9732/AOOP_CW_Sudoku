@@ -59,27 +59,29 @@ public final class SudokuController {
         for (int i = 1; i <= 9; i++) {
             final int digit = i;
             frame.getDigitButton(i).addActionListener(event -> {
-
-                // A digit is applied only when there is a valid selected cell.
                 assert selectedRow >= 0 && selectedRow < Model.SIZE : "Selected row is out of bounds";
                 assert selectedColumn >= 0 && selectedColumn < Model.SIZE : "Selected column is out of bounds";
 
                 model.setValue(selectedRow, selectedColumn, digit);
+                frame.requestFocusInWindow();
             });
         }
 
         // Bind GUI option toggles to the model flags.
-        frame.getValidationCheckBox().addActionListener(event ->
-                model.setValidationFeedbackEnabled(frame.getValidationCheckBox().isSelected())
-        );
+        frame.getValidationCheckBox().addActionListener(event -> {
+            model.setValidationFeedbackEnabled(frame.getValidationCheckBox().isSelected());
+            frame.requestFocusInWindow();
+        });
 
-        frame.getHintCheckBox().addActionListener(event ->
-                model.setHintEnabled(frame.getHintCheckBox().isSelected())
-        );
+        frame.getHintCheckBox().addActionListener(event -> {
+            model.setHintEnabled(frame.getHintCheckBox().isSelected());
+            frame.requestFocusInWindow();
+        });
 
-        frame.getRandomCheckBox().addActionListener(event ->
-                model.setRandomPuzzleSelectionEnabled(frame.getRandomCheckBox().isSelected())
-        );
+        frame.getRandomCheckBox().addActionListener(event -> {
+            model.setRandomPuzzleSelectionEnabled(frame.getRandomCheckBox().isSelected());
+            frame.requestFocusInWindow();
+        });
 
         refreshView();
 
