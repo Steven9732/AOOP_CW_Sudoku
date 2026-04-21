@@ -40,6 +40,7 @@ public class BoardPanel extends JPanel {
                 CellButton b = new CellButton(row, column);
                 b.setMargin(new Insets(0,0,0,0));
                 b.setFocusPainted(false);
+                b.setFocusable(false);
                 int finalColumn = column;
                 int finalRow = row;
                 b.addActionListener(e -> cellClickHandler.onCellClicked(finalRow, finalColumn));

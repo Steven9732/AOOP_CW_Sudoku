@@ -75,6 +75,17 @@ public final class SudokuFrame extends JFrame implements Observer {
         setLayout(new BorderLayout());
         add(left, BorderLayout.CENTER);
         add(right, BorderLayout.EAST);
+
+        NewGameButton.setFocusable(false);
+        ResetButton.setFocusable(false);
+        UndoButton.setFocusable(false);
+        EraseButton.setFocusable(false);
+        HintButton.setFocusable(false);
+
+        ValidationCB.setFocusable(false);
+        HintCB.setFocusable(false);
+        RandomCB.setFocusable(false);
+
         setFocusable(true);
     }
 
@@ -118,6 +129,7 @@ public final class SudokuFrame extends JFrame implements Observer {
         p.setAlignmentX(Component.LEFT_ALIGNMENT + Component.RIGHT_ALIGNMENT);
         for (int i = 0; i < 9; i++) {
             JButton b = new JButton(String.valueOf(i + 1));
+            b.setFocusable(false);
             digitButtons[i] = b;
             p.add(b);
         }
