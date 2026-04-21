@@ -31,15 +31,30 @@ public final class SudokuController {
             frame.requestFocusInWindow();
         });
 
-        frame.getEraseButton().addActionListener(
-                new EraseAction(model, () -> selectedRow, () -> selectedColumn)
-        );
-        frame.getUndoButton().addActionListener(new UndoAction(model));
-        frame.getHintButton().addActionListener(
-                new HintAction(model, () -> selectedRow, () -> selectedColumn)
-        );
-        frame.getResetButton().addActionListener(new ResetAction(model));
-        frame.getNewGameButton().addActionListener(new NewGameAction(model));
+        frame.getEraseButton().addActionListener(event -> {
+            new EraseAction(model, () -> selectedRow, () -> selectedColumn).actionPerformed(event);
+            frame.requestFocusInWindow();
+        });
+
+        frame.getUndoButton().addActionListener(event -> {
+            new UndoAction(model).actionPerformed(event);
+            frame.requestFocusInWindow();
+        });
+
+        frame.getHintButton().addActionListener(event -> {
+            new HintAction(model, () -> selectedRow, () -> selectedColumn).actionPerformed(event);
+            frame.requestFocusInWindow();
+        });
+
+        frame.getResetButton().addActionListener(event -> {
+            new ResetAction(model).actionPerformed(event);
+            frame.requestFocusInWindow();
+        });
+
+        frame.getNewGameButton().addActionListener(event -> {
+            new NewGameAction(model).actionPerformed(event);
+            frame.requestFocusInWindow();
+        });
 
         for (int i = 1; i <= 9; i++) {
             final int digit = i;
