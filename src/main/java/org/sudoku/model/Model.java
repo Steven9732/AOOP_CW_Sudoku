@@ -170,8 +170,8 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     public boolean canBeEdit(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
-        boolean result = board.isEmpty(row, column);
-        assert result == (getCellValue(row, column) == 0) : "Fixed cell cannot be edited.";
+        boolean result = board.canBeEdit(row, column);
+        assert result == !isFixed(row, column) : "Fixed cell cannot be edited.";
         return result;
     }
 
@@ -562,7 +562,7 @@ public final class Model extends Observable implements SudokuModel {
                 && board.canBeEdit(row, column)
                 && board.isEmpty(row, column)) : "Hint applicability must match its defining condition.";
 
-        return board.canBeEdit(row, column) && board.isEmpty(row, column);
+        return result;
     }
 
     /**
