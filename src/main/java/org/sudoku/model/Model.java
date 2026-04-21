@@ -128,14 +128,16 @@ public final class Model extends Observable implements SudokuModel {
      * @param column column index from 0
      * @return the current value, where 0 means empty
      */
-    /*@@
+    /*@
        @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
        @ ensures 0 <= \result && \result <= 9;
      */
     @Override
     public int getCellValue(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
-        return board.getCellValue(row, column);
+        int result = board.getCellValue(row, column);
+        assert result >= 0 && result <= 9 :"Cell value must be between 0 and 9.";
+        return result;
     }
 
     /**
@@ -151,7 +153,9 @@ public final class Model extends Observable implements SudokuModel {
     @Override
     public boolean isFixed(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
-        return board.isFixed(row, column);
+        boolean result = board.isFixed(row, column);
+        assert result == (initial[row][column] != 0) :"Fixed-state must match the initial givens.";
+        return result;
     }
 
     /**
@@ -166,7 +170,9 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     public boolean canBeEdit(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
-        return board.canBeEdit(row, column);
+        boolean result = board.isEmpty(row, column);
+        assert result == (getCellValue(row, column) == 0) : "Fixed cell cannot be edited.";
+        return result;
     }
 
     /**
@@ -238,6 +244,7 @@ public final class Model extends Observable implements SudokuModel {
         updateCompletionStateAfterBoardChange();
         changed();
         assert board.getCellValue(row, column) == 0 : "Clear is not successful";
+        assert canUndo() : "A real accepted clear must create one undo record.";
         assertInvariants();
         return true;
     }
@@ -254,7 +261,9 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     public boolean isEmpty(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
-        return board.isEmpty(row, column);
+        boolean empty = board.isEmpty(row, column);
+        assert empty == (getCellValue(row, column) == 0) : "Empty cell should be 0.";
+        return empty;
     }
 
     /**
@@ -262,7 +271,9 @@ public final class Model extends Observable implements SudokuModel {
      */
     /*@ ensures \result <==> validationFeedbackEnabled; @*/
     public boolean isValidationFeedbackEnabled() {
-        return validationFeedbackEnabled;
+        boolean result = validationFeedbackEnabled;
+        assert result == validationFeedbackEnabled : "Returned validation flag must match the field.";
+        return result;
     }
 
     /**
@@ -271,22 +282,20 @@ public final class Model extends Observable implements SudokuModel {
      */
     /*@
       @ assignable validationFeedbackEnabled;
-      @ ensures isValidationFeedbackEnabled() == enabled;
+      @ ensures isValidationFeedbackEnabled() == validationFeedbackEnabled;
       @*/
     public void setValidationFeedbackEnabled(boolean validationFeedbackEnabled) {
-        if (this.validationFeedbackEnabled == validationFeedbackEnabled) return;
+        assert this.validationFeedbackEnabled == validationFeedbackEnabled : "Validation flag should remain unchanged.";
         this.validationFeedbackEnabled = validationFeedbackEnabled;
         changed();
+        assert this.validationFeedbackEnabled == validationFeedbackEnabled : "Validation flag was not updated correctly.";
+        assert isValidationFeedbackEnabled() == validationFeedbackEnabled : "Getter must reflect the updated validation flag.";
         assertInvariants();
     }
 
     /**
      * @return whether the board currently has no duplicate non-zero values.
      */
-    /*@
-      @ ensures \result <==> (\forall int r, c; 0 <= r && r < SIZE && 0 <= c && c < SIZE;
-      @ ensures !isCellInvalid(r, c));
-      @*/
     @Override
     public boolean isBoardValid() {
         return board.isBoardValid();
@@ -304,7 +313,9 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     public boolean isCellInvalid(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
-        return board.isCellInvalid(row, column);
+        boolean result = board.isCellInvalid(row, column);
+        assert !isEmpty(row, column) || !result : "Empty cells must never be marked invalid.";
+        return result;
     }
 
     /**
@@ -325,7 +336,6 @@ public final class Model extends Observable implements SudokuModel {
      * Returns whether the puzzle is solved.
      * @return true if the puzzle is solved
      */
-    /*@ ensures \result <==> solved; @*/
     public boolean isSolved() {
         return solved;
     }
@@ -340,12 +350,17 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures !completionEventPending;
       @*/
     public boolean consumeCompletionEvent() {
-        // Once the event is read, the pending flag is cleared.
+        boolean oldPending = completionEventPending;
+        boolean result;
         if (completionEventPending) {
             completionEventPending = false;
-            return true;
+            result = true;
+        } else {
+            result = false;
         }
-        return false;
+        assert result == oldPending : "Return value must equal the old pending completion-event state.";
+        assert !completionEventPending : "Completion event flag must be cleared after consumption.";
+        return result;
     }
 
     /**
@@ -389,9 +404,11 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     public void setRandomPuzzleSelectionEnabled(boolean enabled) {
         if (this.randomPuzzleSelectionEnabled == enabled) return; // Ensure the status is really changed
+        assert this.randomPuzzleSelectionEnabled == enabled : "Random-selection flag should remain unchanged.";
         this.randomPuzzleSelectionEnabled = enabled;
         changed();
         assertInvariants();
+        assert this.randomPuzzleSelectionEnabled == enabled : "Random-selection flag was not updated correctly.";
     }
 
     /**
@@ -399,10 +416,6 @@ public final class Model extends Observable implements SudokuModel {
      *
      * @param enabled true to allow hints
      */
-    /*@
-      @ assignable hintEnabled;
-      @ ensures isHintEnabled() == enabled;
-      @*/
     public void setHintEnabled(boolean enabled) {
         if (this.hintEnabled == enabled) return; // Ensure the status is really changed
         this.hintEnabled = enabled;
@@ -420,7 +433,10 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures \result ==> !canUndo();
       @*/
     public boolean undo() {
-        if (history.isEmpty()) return false;
+        if (history.isEmpty()) {
+            assert !canUndo() : "Undo must be unavailable when the history is empty.";
+            return false;
+        }
 
         // Get the previous value of the most recent accepted board change.
         Move latestMove = history.pop();
@@ -429,6 +445,7 @@ public final class Model extends Observable implements SudokuModel {
         updateCompletionStateAfterBoardChange();
         changed();
         assert getCellValue(latestMove.row, latestMove.col) == latestMove.oldValue : "Undo should restore the previous value.";
+        assert !canUndo() : "Single-level undo must leave no further undo record after success.";
         assertInvariants();
         return true;
     }
@@ -436,7 +453,6 @@ public final class Model extends Observable implements SudokuModel {
     /**
      * Returns whether a single undo action is currently available.
      */
-    /*@ ensures \result <==> !history.isEmpty(); @*/
     @Override
     public boolean canUndo() {
         return !history.isEmpty();
@@ -461,7 +477,26 @@ public final class Model extends Observable implements SudokuModel {
         solved = false;
         completionEventPending = false;
         changed();
+
+        assert !isSolved() : "Reset puzzle must not be solved.";
+        assert !canUndo() : "Reset must clear undo history.";
+        assert boardMatchesInitial() : "Reset must restore every cell to the initial puzzle.";
         assertInvariants();
+        return true;
+    }
+
+    /**
+     * Checks whether the board is the same as initialed
+     * @return true if it matches
+     */
+    private boolean boardMatchesInitial() {
+        for (int row = 0; row < SIZE; row++) {
+            for (int column = 0; column < SIZE; column++) {
+                if (board.getCellValue(row, column) != initial[row][column]) {
+                    return false;
+                }
+            }
+        }
         return true;
     }
 
@@ -496,6 +531,7 @@ public final class Model extends Observable implements SudokuModel {
         updateCompletionStateAfterBoardChange();
         changed();
         assert getCellValue(row, column) == correctValue : "Hint should write the solved value.";
+        assert canUndo() : "A successful hint must create one undo record.";
         assertInvariants();
         return true;
     }
@@ -515,9 +551,16 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     @Override
     public boolean canApplyHint(int row, int column) {
-        if (!hintEnabled) return false;
-        if (solution == null) return false;
-        if (!inRange(row, column)) return false;
+        boolean result = hintEnabled
+                && solution != null
+                && inRange(row, column)
+                && board.canBeEdit(row, column)
+                && board.isEmpty(row, column);
+        assert result == (hintEnabled
+                && solution != null
+                && inRange(row, column)
+                && board.canBeEdit(row, column)
+                && board.isEmpty(row, column)) : "Hint applicability must match its defining condition.";
 
         return board.canBeEdit(row, column) && board.isEmpty(row, column);
     }
