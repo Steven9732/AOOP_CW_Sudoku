@@ -285,11 +285,17 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures isValidationFeedbackEnabled() == validationFeedbackEnabled;
       @*/
     public void setValidationFeedbackEnabled(boolean validationFeedbackEnabled) {
-        assert this.validationFeedbackEnabled == validationFeedbackEnabled : "Validation flag should remain unchanged.";
+        if (this.validationFeedbackEnabled == validationFeedbackEnabled) {
+            return;
+        }
+
         this.validationFeedbackEnabled = validationFeedbackEnabled;
         changed();
-        assert this.validationFeedbackEnabled == validationFeedbackEnabled : "Validation flag was not updated correctly.";
-        assert isValidationFeedbackEnabled() == validationFeedbackEnabled : "Getter must reflect the updated validation flag.";
+
+        assert this.validationFeedbackEnabled == validationFeedbackEnabled
+                : "Validation flag was not updated correctly.";
+        assert isValidationFeedbackEnabled() == validationFeedbackEnabled;
+
         assertInvariants();
     }
 
@@ -404,7 +410,6 @@ public final class Model extends Observable implements SudokuModel {
       @*/
     public void setRandomPuzzleSelectionEnabled(boolean enabled) {
         if (this.randomPuzzleSelectionEnabled == enabled) return; // Ensure the status is really changed
-        assert this.randomPuzzleSelectionEnabled == enabled : "Random-selection flag should remain unchanged.";
         this.randomPuzzleSelectionEnabled = enabled;
         changed();
         assertInvariants();
