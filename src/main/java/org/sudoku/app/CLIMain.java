@@ -37,6 +37,9 @@ public class CLIMain {
                         int column = parseInt(token[2], "column") -1;
                         int value = parseInt(token[3], "value");
                         boolean set = model.setValue(row, column, value);
+                        if (!set) {
+                            System.out.println("Move rejected. Only editable cells can be changed, and values must be 1..9.");
+                        }
                         stateChanged = set;
                     }
                     case "clear", "erase" -> {
@@ -44,10 +47,16 @@ public class CLIMain {
                         int  row = parseInt(token[1], "row") -1;
                         int column = parseInt(token[2], "column") -1;
                         boolean cleared = model.clearValue(row, column);
+                        if (!cleared) {
+                            System.out.println("Clear rejected. Pre-filled cells cannot be cleared.");
+                        }
                         stateChanged = cleared;
                     }
                     case "undo" -> {
                         boolean undo = model.undo();
+                        if (!undo) {
+                            System.out.println("Undo rejected. There is no move to undo.");
+                        }
                         stateChanged = undo;
 
                     }
@@ -56,6 +65,9 @@ public class CLIMain {
                         int row = parseInt(token[1], "row") - 1;
                         int column = parseInt(token[2], "column") - 1;
                         boolean applyHint = model.applyHint(row, column);
+                        if (!applyHint) {
+                            System.out.println("Hint rejected. Select an empty editable cell and make sure hints are enabled.");
+                        }
                         stateChanged = applyHint;
                     }
                     case "reset" -> {
@@ -147,6 +159,6 @@ public class CLIMain {
     }
 
     private static void requiredInputLength(String[] token, int length) {
-        if(token.length != length) throw new IllegalArgumentException("Excepted input length" + length + " tokens but got " + token.length);
+        throw new IllegalArgumentException("Expected input length " + length + " tokens but got " + token.length + ".");
     }
 }

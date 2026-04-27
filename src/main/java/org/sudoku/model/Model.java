@@ -59,20 +59,36 @@ public final class Model extends Observable implements SudokuModel {
         newGame();
     }
 
-    /**
-     * Replaces the current board with a new puzzle.
-     */
+    /*@
+      @ assignable board, initial, solution, currentPuzzleIndex, history, solved, completionEventPending;
+      @ ensures currentPuzzleIndex >= 0 && currentPuzzleIndex < puzzles.size();
+      @ ensures !isSolved();
+      @ ensures !canUndo();
+      @ ensures !completionEventPending;
+      @ ensures (\forall int r, c;
+      @     0 <= r && r < SIZE && 0 <= c && c < SIZE;
+      @     getCellValue(r, c) == initial[r][c]);
+      @*/
     @Override
     public void newGame() {
         int index;
-        // Random mode picks any puzzle
+
         if (randomPuzzleSelectionEnabled) {
             index = random.nextInt(this.puzzles.size());
         } else {
-            // Non-random mode advances through the list in order
-            index = (currentPuzzleIndex + 1) % puzzles.size();
+            // Fixed-puzzle mode always loads the same puzzle.
+            index = 0;
         }
+
         newGame(index);
+
+        assert currentPuzzleIndex >= 0 && currentPuzzleIndex < puzzles.size()
+                : "Current puzzle index must be valid.";
+        assert !isSolved() : "A new game must not start solved.";
+        assert !canUndo() : "A new game must clear undo history.";
+        assert !completionEventPending : "A new game must not trigger completion.";
+        assert boardMatchesInitial() : "A new game must load the selected initial puzzle.";
+        assertInvariants();
     }
 
     /**
@@ -187,9 +203,10 @@ public final class Model extends Observable implements SudokuModel {
     /*@
       @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
       @ assignable board, history, solved, completionEventPending;
+      @ ensures (value < 1 || value > 9 || \old(isFixed(row, column))) ==> !\result;
       @ ensures !\result ==> getCellValue(row, column) == \old(getCellValue(row, column));
-      @ ensures \result && 0 <= value && value <= 9 && !isFixed(row, column) ==> getCellValue(row, column) == value;
-      @ ensures \result && \old(getCellValue(row, column)) != value && 0 <= value && value <= 9 && !isFixed(row, column) ==> canUndo();
+      @ ensures \result ==> getCellValue(row, column) == value;
+      @ ensures \result && \old(getCellValue(row, column)) != value ==> canUndo();
       @*/
     @Override
     public boolean setValue(int row, int column, int value) {
@@ -197,21 +214,38 @@ public final class Model extends Observable implements SudokuModel {
 
         int oldCellValue = getCellValue(row, column);
 
-        if (!board.setValue(row, column, value)) {
-            assert getCellValue(row, column) == oldCellValue : "Rejected writes must not change the board.";
+        // Public Model input only accepts digits 1..9.
+        // Clearing must be done through clearValue().
+        if (value < 1 || value > 9) {
+            assert getCellValue(row, column) == oldCellValue
+                    : "Rejected invalid input must not change the board.";
             return false;
         }
-        // The request is accepted, but no real state change, so no undo record or notification is needed.
+
+        if (isFixed(row, column)) {
+            assert getCellValue(row, column) == oldCellValue
+                    : "Rejected writes to fixed cells must not change the board.";
+            return false;
+        }
+
+        boolean accepted = board.setValue(row, column, value);
+        assert accepted : "A valid write to an editable cell should be accepted.";
+
+        // The request is accepted, but no real state change happens.
         if (oldCellValue == value) {
-            assert getCellValue(row, column) == value : "Cell value should stay unchanged.";
+            assert getCellValue(row, column) == value
+                    : "Cell value should stay unchanged.";
             return true;
         }
 
         recordSingleUndo(row, column, oldCellValue, value);
         updateCompletionStateAfterBoardChange();
         changed();
-        assert board.getCellValue(row, column) == value : "Change is not successful";
+
+        assert getCellValue(row, column) == value : "Change is not successful.";
+        assert canUndo() : "A real accepted write must create one undo record.";
         assertInvariants();
+
         return true;
     }
 
@@ -309,9 +343,20 @@ public final class Model extends Observable implements SudokuModel {
     /**
      * @return whether the board currently has no duplicate non-zero values.
      */
+    /*@
+      @ ensures \result <==>
+      @     (\forall int r, c;
+      @         0 <= r && r < SIZE && 0 <= c && c < SIZE;
+      @         !isCellInvalid(r, c));
+      @*/
     @Override
     public boolean isBoardValid() {
-        return board.isBoardValid();
+        boolean result = board.isBoardValid();
+
+        assert result == board.isBoardValid()
+                : "Board validity result must match the board state.";
+
+        return result;
     }
 
     /**
@@ -350,9 +395,21 @@ public final class Model extends Observable implements SudokuModel {
      * Returns whether the puzzle is solved.
      * @return true if the puzzle is solved
      */
+    /*@
+      @ ensures \result <==> solved;
+      @ ensures \result ==> isBoardValid();
+      @*/
     @Override
     public boolean isSolved() {
-        return solved;
+        boolean result = solved;
+
+        assert result == solved : "Solved result must match the solved field.";
+        if (result) {
+            assert isBoardValid() : "A solved board must be valid.";
+            assert isBoardFull() : "A solved board must be full.";
+        }
+
+        return result;
     }
 
     /**
@@ -416,15 +473,22 @@ public final class Model extends Observable implements SudokuModel {
      */
     /*@
       @ assignable randomPuzzleSelectionEnabled;
-      @ ensures isRandomPuzzleSelectionEnabled() == enabled;
+      @ ensures randomPuzzleSelectionEnabled == enabled;
       @*/
     @Override
     public void setRandomPuzzleSelectionEnabled(boolean enabled) {
-        if (this.randomPuzzleSelectionEnabled == enabled) return; // Ensure the status is really changed
+        if (this.randomPuzzleSelectionEnabled == enabled) {
+            assert this.randomPuzzleSelectionEnabled == enabled
+                    : "Random-selection flag should already match the requested state.";
+            return;
+        }
+
         this.randomPuzzleSelectionEnabled = enabled;
         changed();
+
+        assert this.randomPuzzleSelectionEnabled == enabled
+                : "Random-selection flag was not updated correctly.";
         assertInvariants();
-        assert this.randomPuzzleSelectionEnabled == enabled : "Random-selection flag was not updated correctly.";
     }
 
     /**
@@ -432,11 +496,23 @@ public final class Model extends Observable implements SudokuModel {
      *
      * @param enabled true to allow hints
      */
+    /*@
+      @ assignable hintEnabled;
+      @ ensures hintEnabled == enabled;
+      @*/
     @Override
     public void setHintEnabled(boolean enabled) {
-        if (this.hintEnabled == enabled) return; // Ensure the status is really changed
+        if (this.hintEnabled == enabled) {
+            assert this.hintEnabled == enabled
+                    : "Hint flag should already match the requested state.";
+            return;
+        }
+
         this.hintEnabled = enabled;
         changed();
+
+        assert this.hintEnabled == enabled
+                : "Hint flag was not updated correctly.";
         assertInvariants();
     }
 
@@ -471,9 +547,16 @@ public final class Model extends Observable implements SudokuModel {
     /**
      * Returns whether a single undo action is currently available.
      */
+    /*@
+  @ ensures \result <==> !history.isEmpty();
+  @*/
     @Override
     public boolean canUndo() {
-        return !history.isEmpty();
+        boolean result = !history.isEmpty();
+
+        assert history.size() <= 1 : "Only one undo record should be kept.";
+
+        return result;
     }
 
     /**
@@ -562,6 +645,7 @@ public final class Model extends Observable implements SudokuModel {
      */
     /*@
       @ ensures \result <==> (hintEnabled
+      @                      && solution != null
       @                      && 0 <= row && row < SIZE
       @                      && 0 <= column && column < SIZE
       @                      && canBeEdit(row, column)
@@ -574,11 +658,13 @@ public final class Model extends Observable implements SudokuModel {
                 && inRange(row, column)
                 && board.canBeEdit(row, column)
                 && board.isEmpty(row, column);
+
         assert result == (hintEnabled
                 && solution != null
                 && inRange(row, column)
                 && board.canBeEdit(row, column)
-                && board.isEmpty(row, column)) : "Hint applicability must match its defining condition.";
+                && board.isEmpty(row, column))
+                : "Hint applicability must match its defining condition.";
 
         return result;
     }
@@ -668,7 +754,10 @@ public final class Model extends Observable implements SudokuModel {
             }
         }
 
-        assert currentPuzzleIndex >= -1 && currentPuzzleIndex < puzzles.size() : "Puzzle index should be in range.";
+        assert currentPuzzleIndex >= 0 && currentPuzzleIndex < puzzles.size()
+                : "Puzzle index should be in range.";
+        assert history.size() <= 1
+                : "Single-level undo should keep at most one move.";
 
         if (solved) {
             assert isBoardFull() : "The pre-condition of solved all cells in board is full.";

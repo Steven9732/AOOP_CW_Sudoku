@@ -37,7 +37,6 @@ public final class SudokuFrame extends JFrame implements Observer {
         super("Sudoku");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 800));
-        setLocationRelativeTo(null);
 
         // Left
         JPanel left = new JPanel(new BorderLayout());
@@ -87,6 +86,8 @@ public final class SudokuFrame extends JFrame implements Observer {
         RandomCB.setFocusable(false);
 
         setFocusable(true);
+        setSize(1000, 800);
+        setLocationRelativeTo(null);
     }
 
     public void bind(SudokuModel model, SudokuController controller) {
