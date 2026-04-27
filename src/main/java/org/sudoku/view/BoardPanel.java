@@ -1,6 +1,6 @@
 package org.sudoku.view;
 
-import org.sudoku.model.Model;
+import org.sudoku.model.SudokuModel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,7 +12,7 @@ public class BoardPanel extends JPanel {
         void onCellClicked(int row, int column);
     }
 
-    private final CellButton[][] cells = new CellButton[Model.SIZE][Model.SIZE];
+    private final CellButton[][] cells = new CellButton[SudokuModel.SIZE][SudokuModel.SIZE];
     private int selectedRow = -1;
     private int selectedColumn = -1;
 
@@ -32,11 +32,11 @@ public class BoardPanel extends JPanel {
     }
 
     public BoardPanel() {
-        super(new GridLayout(Model.SIZE, Model.SIZE, 0, 0));
+        super(new GridLayout(SudokuModel.SIZE, SudokuModel.SIZE, 0, 0));
         setFocusable(false);
 
-        for (int row = 0; row < Model.SIZE; row++) {
-            for (int column = 0; column < Model.SIZE; column++) {
+        for (int row = 0; row < SudokuModel.SIZE; row++) {
+            for (int column = 0; column < SudokuModel.SIZE; column++) {
                 CellButton b = new CellButton(row, column);
                 b.setMargin(new Insets(0,0,0,0));
                 b.setFocusPainted(false);
@@ -62,11 +62,11 @@ public class BoardPanel extends JPanel {
         this.cellClickHandler = (handler == null) ? (r, c) -> {} : handler;
     }
 
-    public void refreshFromModel(Model model) {
+    public void refreshFromModel(SudokuModel model) {
         boolean showInvalid = model.isValidationFeedbackEnabled();
 
-        for (int r = 0; r < Model.SIZE; r++) {
-            for (int c = 0; c < Model.SIZE; c++) {
+        for (int r = 0; r < SudokuModel.SIZE; r++) {
+            for (int c = 0; c < SudokuModel.SIZE; c++) {
                 CellButton b = cells[r][c];
                 int v = model.getCellValue(r, c);
 

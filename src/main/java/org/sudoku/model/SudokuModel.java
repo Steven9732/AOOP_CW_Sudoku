@@ -1,6 +1,11 @@
 package org.sudoku.model;
 
+import java.util.Observer;
+
+//@SuppressWarnings("deprecation")
 public interface SudokuModel {
+    int SIZE = 9;
+
     /**
      * Starts a new game.
      */
@@ -32,7 +37,7 @@ public interface SudokuModel {
     boolean setValue(int row, int column, int value);
 
     /**
-     * Clear value in a specific value
+     * Clear value in a specific cell.
      */
     boolean clearValue(int row, int column);
 
@@ -100,4 +105,9 @@ public interface SudokuModel {
      * Enables or disables the hint feature.
      */
     void setHintEnabled(boolean enabled);
+
+    /**
+     * Registers a view observer for model updates.
+     */
+    void addObserver(Observer observer);
 }

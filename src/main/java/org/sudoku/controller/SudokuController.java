@@ -1,6 +1,6 @@
 package org.sudoku.controller;
 
-import org.sudoku.model.Model;
+import org.sudoku.model.SudokuModel;
 import org.sudoku.view.SudokuFrame;
 
 import javax.swing.JButton;
@@ -9,7 +9,7 @@ import java.awt.event.KeyEvent;
 import java.util.Objects;
 
 public final class SudokuController {
-    private final Model model;
+    private final SudokuModel model;
     private final SudokuFrame frame;
 
     private int selectedRow = -1;
@@ -20,7 +20,7 @@ public final class SudokuController {
      * @param model the Sudoku model
      * @param frame the Sudoku GUI frame
      */
-    public SudokuController(Model model, SudokuFrame frame) {
+    public SudokuController(SudokuModel model, SudokuFrame frame) {
         this.model = Objects.requireNonNull(model, "model must not be null");
         this.frame = Objects.requireNonNull(frame, "frame must not be null");
 
@@ -59,8 +59,8 @@ public final class SudokuController {
         for (int i = 1; i <= 9; i++) {
             final int digit = i;
             frame.getDigitButton(i).addActionListener(event -> {
-                assert selectedRow >= 0 && selectedRow < Model.SIZE : "Selected row is out of bounds";
-                assert selectedColumn >= 0 && selectedColumn < Model.SIZE : "Selected column is out of bounds";
+                assert selectedRow >= 0 && selectedRow < SudokuModel.SIZE : "Selected row is out of bounds";
+                assert selectedColumn >= 0 && selectedColumn < SudokuModel.SIZE : "Selected column is out of bounds";
 
                 model.setValue(selectedRow, selectedColumn, digit);
                 frame.requestFocusInWindow();
@@ -91,8 +91,8 @@ public final class SudokuController {
             @Override
             public void keyTyped(KeyEvent e) {
                 // Only editable selected cells can receive typed digits.
-                if (selectedRow < 0 || selectedRow >= Model.SIZE
-                        || selectedColumn < 0 || selectedColumn >= Model.SIZE) {
+                if (selectedRow < 0 || selectedRow >= SudokuModel.SIZE
+                        || selectedColumn < 0 || selectedColumn >= SudokuModel.SIZE) {
                     return;
                 }
 
@@ -119,8 +119,8 @@ public final class SudokuController {
                     case KeyEvent.VK_RIGHT -> moveSelection(0, 1);
                     case KeyEvent.VK_BACK_SPACE, KeyEvent.VK_DELETE -> {
                         // Keep selected cell in boundaries
-                        if (selectedRow >= 0 && selectedRow < Model.SIZE
-                                && selectedColumn >= 0 && selectedColumn < Model.SIZE
+                        if (selectedRow >= 0 && selectedRow < SudokuModel.SIZE
+                                && selectedColumn >= 0 && selectedColumn < SudokuModel.SIZE
                                 && model.canBeEdit(selectedRow, selectedColumn)) {
                             model.clearValue(selectedRow, selectedColumn);
                         }
@@ -152,8 +152,8 @@ public final class SudokuController {
             selectedRow = 0;
             selectedColumn = 0;
         } else {
-            selectedRow = Math.max(0, Math.min(Model.SIZE - 1, selectedRow + deltaRow));
-            selectedColumn = Math.max(0, Math.min(Model.SIZE - 1, selectedColumn + deltaColumn));
+            selectedRow = Math.max(0, Math.min(SudokuModel.SIZE - 1, selectedRow + deltaRow));
+            selectedColumn = Math.max(0, Math.min(SudokuModel.SIZE - 1, selectedColumn + deltaColumn));
         }
         refreshView();
         frame.requestFocusInWindow();
@@ -181,8 +181,8 @@ public final class SudokuController {
      */
     private void updateControlStates() {
         // Enable or disable controls according to the current selection and model state.
-        boolean hasSelection = selectedRow >= 0 && selectedRow < Model.SIZE
-                && selectedColumn >= 0 && selectedColumn < Model.SIZE;
+        boolean hasSelection = selectedRow >= 0 && selectedRow < SudokuModel.SIZE
+                && selectedColumn >= 0 && selectedColumn < SudokuModel.SIZE;
         boolean selectedEditable = hasSelection && model.canBeEdit(selectedRow, selectedColumn);
         boolean selectedNonEmptyEditable = selectedEditable && !model.isEmpty(selectedRow, selectedColumn);
         boolean selectedHintApplicable = hasSelection && model.canApplyHint(selectedRow, selectedColumn);

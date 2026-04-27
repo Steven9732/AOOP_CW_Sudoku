@@ -1,7 +1,7 @@
 package org.sudoku.view;
 
 import org.sudoku.controller.SudokuController;
-import org.sudoku.model.Model;
+import org.sudoku.model.SudokuModel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,7 +10,7 @@ import java.util.Observer;
 
 @SuppressWarnings("deprecation")
 public final class SudokuFrame extends JFrame implements Observer {
-    private Model model;
+    private SudokuModel model;
     private SudokuController controller;
 
     private final BoardPanel boardPanel = new BoardPanel();
@@ -89,7 +89,7 @@ public final class SudokuFrame extends JFrame implements Observer {
         setFocusable(true);
     }
 
-    public void bind(Model model, SudokuController controller) {
+    public void bind(SudokuModel model, SudokuController controller) {
         this.model = model;
         this.controller = controller;
         model.addObserver(this);

@@ -62,6 +62,7 @@ public final class Model extends Observable implements SudokuModel {
     /**
      * Replaces the current board with a new puzzle.
      */
+    @Override
     public void newGame() {
         int index;
         // Random mode picks any puzzle
@@ -168,6 +169,7 @@ public final class Model extends Observable implements SudokuModel {
       @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
       @ ensures \result <==> !isFixed(row, column);
       @*/
+    @Override
     public boolean canBeEdit(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         boolean result = board.canBeEdit(row, column);
@@ -189,6 +191,7 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures \result && 0 <= value && value <= 9 && !isFixed(row, column) ==> getCellValue(row, column) == value;
       @ ensures \result && \old(getCellValue(row, column)) != value && 0 <= value && value <= 9 && !isFixed(row, column) ==> canUndo();
       @*/
+    @Override
     public boolean setValue(int row, int column, int value) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
@@ -225,6 +228,7 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures \result ==> getCellValue(row, column) == 0;
       @ ensures \result && \old(getCellValue(row, column)) != 0 ==> canUndo();
       @*/
+    @Override
     public boolean clearValue(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
 
@@ -259,6 +263,7 @@ public final class Model extends Observable implements SudokuModel {
       @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
       @ ensures \result <==> getCellValue(row, column) == 0;
       @*/
+    @Override
     public boolean isEmpty(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         boolean empty = board.isEmpty(row, column);
@@ -270,6 +275,7 @@ public final class Model extends Observable implements SudokuModel {
      * @return whether validation feedback is enabled.
      */
     /*@ ensures \result <==> validationFeedbackEnabled; @*/
+    @Override
     public boolean isValidationFeedbackEnabled() {
         boolean result = validationFeedbackEnabled;
         assert result == validationFeedbackEnabled : "Returned validation flag must match the field.";
@@ -284,6 +290,7 @@ public final class Model extends Observable implements SudokuModel {
       @ assignable validationFeedbackEnabled;
       @ ensures isValidationFeedbackEnabled() == validationFeedbackEnabled;
       @*/
+    @Override
     public void setValidationFeedbackEnabled(boolean validationFeedbackEnabled) {
         if (this.validationFeedbackEnabled == validationFeedbackEnabled) {
             return;
@@ -317,6 +324,7 @@ public final class Model extends Observable implements SudokuModel {
       @ requires 0 <= row && row < SIZE && 0 <= column && column < SIZE;
       @ ensures isEmpty(row, column) ==> !\result;
       @*/
+    @Override
     public boolean isCellInvalid(int row, int column) {
         assert inRange(row, column) : "Row or column of the game board is out of bounds";
         boolean result = board.isCellInvalid(row, column);
@@ -342,6 +350,7 @@ public final class Model extends Observable implements SudokuModel {
      * Returns whether the puzzle is solved.
      * @return true if the puzzle is solved
      */
+    @Override
     public boolean isSolved() {
         return solved;
     }
@@ -355,6 +364,7 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures \result <==> \old(completionEventPending);
       @ ensures !completionEventPending;
       @*/
+    @Override
     public boolean consumeCompletionEvent() {
         boolean oldPending = completionEventPending;
         boolean result;
@@ -408,6 +418,7 @@ public final class Model extends Observable implements SudokuModel {
       @ assignable randomPuzzleSelectionEnabled;
       @ ensures isRandomPuzzleSelectionEnabled() == enabled;
       @*/
+    @Override
     public void setRandomPuzzleSelectionEnabled(boolean enabled) {
         if (this.randomPuzzleSelectionEnabled == enabled) return; // Ensure the status is really changed
         this.randomPuzzleSelectionEnabled = enabled;
@@ -421,6 +432,7 @@ public final class Model extends Observable implements SudokuModel {
      *
      * @param enabled true to allow hints
      */
+    @Override
     public void setHintEnabled(boolean enabled) {
         if (this.hintEnabled == enabled) return; // Ensure the status is really changed
         this.hintEnabled = enabled;
@@ -437,6 +449,7 @@ public final class Model extends Observable implements SudokuModel {
       @ ensures !\old(canUndo()) ==> !\result;
       @ ensures \result ==> !canUndo();
       @*/
+    @Override
     public boolean undo() {
         if (history.isEmpty()) {
             assert !canUndo() : "Undo must be unavailable when the history is empty.";

@@ -1,13 +1,13 @@
 package org.sudoku.app;
 
+import org.sudoku.model.SudokuModel;
 import org.sudoku.model.Model;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class CLIMain {
     public static void main(String[] args) throws Exception {
-        Model model = new Model();
+        SudokuModel model = new Model();
 
         System.out.println("This is a Sudoku Game");
         System.out.println("Type 'help' to see commands.");
@@ -91,10 +91,10 @@ public class CLIMain {
     }
 
     // Print game board
-    private static void printBoard (Model model) {
-        for (int row = 0; row < model.SIZE; row++) {
+    private static void printBoard (SudokuModel model) {
+        for (int row = 0; row < SudokuModel.SIZE; row++) {
             if (row % 3 == 0) System.out.println("+------+------+------+");
-            for (int col = 0; col < model.SIZE; col++) {
+            for (int col = 0; col < SudokuModel.SIZE; col++) {
                 if (col % 3 == 0) System.out.print("|");
                 int value = model.getCellValue(row, col);
                 System.out.print(value == 0 ? ". " : (value + " "));
@@ -132,11 +132,11 @@ public class CLIMain {
         return x;
     }
 
-    private static void printInvalidCells(Model model) {
+    private static void printInvalidCells(SudokuModel model) {
         StringBuilder sb = new StringBuilder("Invalid cells: ");
         boolean any = false;
-        for (int r = 0; r < Model.SIZE; r++) {
-            for (int c = 0; c < Model.SIZE; c++) {
+        for (int r = 0; r < SudokuModel.SIZE; r++) {
+            for (int c = 0; c < SudokuModel.SIZE; c++) {
                 if (model.getCellValue(r, c) != 0 && model.isCellInvalid(r, c) && !model.isFixed(r, c)) {
                     any = true;
                     sb.append("(").append(r + 1).append(",").append(c + 1).append(") ");

@@ -1,14 +1,14 @@
 package org.sudoku.controller;
 
-import org.sudoku.model.Model;
+import org.sudoku.model.SudokuModel;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 public class ResetAction implements ActionListener{
-    private final Model model;
+    private final SudokuModel model;
 
-    public ResetAction(Model model){
+    public ResetAction(SudokuModel model){
         this.model = model;
     }
 
