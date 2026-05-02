@@ -1,13 +1,13 @@
 package org.sudoku.app;
 
-import org.sudoku.model.SudokuModel;
 import org.sudoku.model.Model;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class CLIMain {
     public static void main(String[] args) throws Exception {
-        SudokuModel model = new Model();
+        Model model = new Model();
 
         System.out.println("This is a Sudoku Game");
         System.out.println("Type 'help' to see commands.");
@@ -37,9 +37,6 @@ public class CLIMain {
                         int column = parseInt(token[2], "column") -1;
                         int value = parseInt(token[3], "value");
                         boolean set = model.setValue(row, column, value);
-                        if (!set) {
-                            System.out.println("Move rejected. Only editable cells can be changed, and values must be 1..9.");
-                        }
                         stateChanged = set;
                     }
                     case "clear", "erase" -> {
@@ -47,16 +44,10 @@ public class CLIMain {
                         int  row = parseInt(token[1], "row") -1;
                         int column = parseInt(token[2], "column") -1;
                         boolean cleared = model.clearValue(row, column);
-                        if (!cleared) {
-                            System.out.println("Clear rejected. Pre-filled cells cannot be cleared.");
-                        }
                         stateChanged = cleared;
                     }
                     case "undo" -> {
                         boolean undo = model.undo();
-                        if (!undo) {
-                            System.out.println("Undo rejected. There is no move to undo.");
-                        }
                         stateChanged = undo;
 
                     }
@@ -65,9 +56,6 @@ public class CLIMain {
                         int row = parseInt(token[1], "row") - 1;
                         int column = parseInt(token[2], "column") - 1;
                         boolean applyHint = model.applyHint(row, column);
-                        if (!applyHint) {
-                            System.out.println("Hint rejected. Select an empty editable cell and make sure hints are enabled.");
-                        }
                         stateChanged = applyHint;
                     }
                     case "reset" -> {
@@ -103,10 +91,10 @@ public class CLIMain {
     }
 
     // Print game board
-    private static void printBoard (SudokuModel model) {
-        for (int row = 0; row < SudokuModel.SIZE; row++) {
+    private static void printBoard (Model model) {
+        for (int row = 0; row < model.SIZE; row++) {
             if (row % 3 == 0) System.out.println("+------+------+------+");
-            for (int col = 0; col < SudokuModel.SIZE; col++) {
+            for (int col = 0; col < model.SIZE; col++) {
                 if (col % 3 == 0) System.out.print("|");
                 int value = model.getCellValue(row, col);
                 System.out.print(value == 0 ? ". " : (value + " "));
@@ -144,11 +132,11 @@ public class CLIMain {
         return x;
     }
 
-    private static void printInvalidCells(SudokuModel model) {
+    private static void printInvalidCells(Model model) {
         StringBuilder sb = new StringBuilder("Invalid cells: ");
         boolean any = false;
-        for (int r = 0; r < SudokuModel.SIZE; r++) {
-            for (int c = 0; c < SudokuModel.SIZE; c++) {
+        for (int r = 0; r < Model.SIZE; r++) {
+            for (int c = 0; c < Model.SIZE; c++) {
                 if (model.getCellValue(r, c) != 0 && model.isCellInvalid(r, c) && !model.isFixed(r, c)) {
                     any = true;
                     sb.append("(").append(r + 1).append(",").append(c + 1).append(") ");
@@ -159,6 +147,6 @@ public class CLIMain {
     }
 
     private static void requiredInputLength(String[] token, int length) {
-        throw new IllegalArgumentException("Expected input length " + length + " tokens but got " + token.length + ".");
+        if(token.length != length) throw new IllegalArgumentException("Excepted input length" + length + " tokens but got " + token.length);
     }
 }
