@@ -1,0 +1,791 @@
+<html>
+<head>
+<title>Model.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #2aacb8;}
+.s5 { color: #7a7e85;}
+.s6 { color: #5f826b; font-style: italic;}
+.s7 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Model.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">model</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.*;</span>
+
+<span class="s1">@SuppressWarnings</span><span class="s2">(</span><span class="s3">&quot;deprecation&quot;</span><span class="s2">)</span>
+<span class="s0">public final class </span><span class="s1">Model </span><span class="s0">extends </span><span class="s1">Observable </span><span class="s0">implements </span><span class="s1">SudokuModel </span><span class="s2">{</span>
+    <span class="s0">public static final int </span><span class="s1">SIZE </span><span class="s2">= </span><span class="s4">9</span><span class="s2">;</span>
+
+    <span class="s0">private </span><span class="s1">Board board</span><span class="s2">;</span>
+
+    <span class="s0">private final </span><span class="s1">List</span><span class="s2">&lt;</span><span class="s1">Puzzle</span><span class="s2">&gt; </span><span class="s1">puzzles</span><span class="s2">; </span><span class="s5">// Numbers loaded from puzzles.txt</span>
+    <span class="s0">private final </span><span class="s1">Random random </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Random</span><span class="s2">();</span>
+
+    <span class="s0">private int</span><span class="s2">[][] </span><span class="s1">initial</span><span class="s2">; </span><span class="s5">// Initial game board</span>
+    <span class="s0">private int </span><span class="s1">currentPuzzleIndex </span><span class="s2">= -</span><span class="s4">1</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">validationFeedbackEnabled </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">hintEnabled </span><span class="s2">= </span><span class="s0">true</span><span class="s2">; </span><span class="s5">// Hint flag</span>
+    <span class="s0">private boolean </span><span class="s1">randomPuzzleSelectionEnabled </span><span class="s2">= </span><span class="s0">true</span><span class="s2">; </span><span class="s5">// Puzzle selection flag</span>
+
+    <span class="s0">private boolean </span><span class="s1">solved </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">completionEventPending </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+
+    <span class="s0">private final </span><span class="s1">Deque</span><span class="s2">&lt;</span><span class="s1">Move</span><span class="s2">&gt; </span><span class="s1">history </span><span class="s2">= </span><span class="s0">new </span><span class="s1">ArrayDeque</span><span class="s2">&lt;&gt;();</span>
+    <span class="s0">private int</span><span class="s2">[][] </span><span class="s1">solution</span><span class="s2">; </span><span class="s5">// The solution for current puzzle</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Store user movement for single-level undo</span>
+     <span class="s6">*/</span>
+    <span class="s0">private static final class </span><span class="s1">Move </span><span class="s2">{</span>
+        <span class="s0">final int </span><span class="s1">row</span><span class="s2">, </span><span class="s1">col</span><span class="s2">;</span>
+        <span class="s0">final int </span><span class="s1">oldValue</span><span class="s2">, </span><span class="s1">newValue</span><span class="s2">;</span>
+
+        <span class="s1">Move</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">col</span><span class="s2">, </span><span class="s0">int </span><span class="s1">oldValue</span><span class="s2">, </span><span class="s0">int </span><span class="s1">newValue</span><span class="s2">) {</span>
+            <span class="s0">this</span><span class="s2">.</span><span class="s1">row </span><span class="s2">= </span><span class="s1">row</span><span class="s2">;</span>
+            <span class="s0">this</span><span class="s2">.</span><span class="s1">col </span><span class="s2">= </span><span class="s1">col</span><span class="s2">;</span>
+            <span class="s0">this</span><span class="s2">.</span><span class="s1">oldValue </span><span class="s2">= </span><span class="s1">oldValue</span><span class="s2">;</span>
+            <span class="s0">this</span><span class="s2">.</span><span class="s1">newValue </span><span class="s2">= </span><span class="s1">newValue</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Replaces any previous undo history with one newly recorded move.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">recordSingleUndo</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">col</span><span class="s2">, </span><span class="s0">int </span><span class="s1">oldValue</span><span class="s2">, </span><span class="s0">int </span><span class="s1">newValue</span><span class="s2">) {</span>
+        <span class="s1">history</span><span class="s2">.</span><span class="s1">clear</span><span class="s2">();</span>
+        <span class="s1">history</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Move</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">col</span><span class="s2">, </span><span class="s1">oldValue</span><span class="s2">, </span><span class="s1">newValue</span><span class="s2">));</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Constructor of Model class.</span>
+     <span class="s6">*/</span>
+    <span class="s0">public </span><span class="s1">Model</span><span class="s2">() {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">puzzles </span><span class="s2">= </span><span class="s1">Collections</span><span class="s2">.</span><span class="s1">unmodifiableList</span><span class="s2">(</span>
+                <span class="s1">PuzzleLoader</span><span class="s2">.</span><span class="s1">loadPuzzlesFromFile</span><span class="s2">(</span><span class="s3">&quot;puzzles.txt&quot;</span><span class="s2">)</span>
+        <span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">puzzles</span><span class="s2">.</span><span class="s1">isEmpty</span><span class="s2">()) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalArgumentException</span><span class="s2">(</span><span class="s3">&quot;Puzzles file is empty&quot;</span><span class="s2">);</span>
+        <span class="s2">}</span>
+        <span class="s1">newGame</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s5">/*@ 
+      @ assignable board, initial, solution, currentPuzzleIndex, history, solved, completionEventPending; 
+      @ ensures currentPuzzleIndex &gt;= 0 &amp;&amp; currentPuzzleIndex &lt; puzzles.size(); 
+      @ ensures !isSolved(); 
+      @ ensures !canUndo(); 
+      @ ensures !completionEventPending; 
+      @ ensures (\forall int r, c; 
+      @     0 &lt;= r &amp;&amp; r &lt; SIZE &amp;&amp; 0 &lt;= c &amp;&amp; c &lt; SIZE; 
+      @     getCellValue(r, c) == initial[r][c]); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">newGame</span><span class="s2">() {</span>
+        <span class="s0">int </span><span class="s1">index</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">randomPuzzleSelectionEnabled</span><span class="s2">) {</span>
+            <span class="s1">index </span><span class="s2">= </span><span class="s1">random</span><span class="s2">.</span><span class="s1">nextInt</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">puzzles</span><span class="s2">.</span><span class="s1">size</span><span class="s2">());</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+            <span class="s5">// Fixed-puzzle mode always loads the same puzzle.</span>
+            <span class="s1">index </span><span class="s2">= </span><span class="s4">0</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s1">newGame</span><span class="s2">(</span><span class="s1">index</span><span class="s2">);</span>
+
+        <span class="s0">assert </span><span class="s1">currentPuzzleIndex </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">currentPuzzleIndex </span><span class="s2">&lt; </span><span class="s1">puzzles</span><span class="s2">.</span><span class="s1">size</span><span class="s2">()</span>
+                <span class="s2">: </span><span class="s3">&quot;Current puzzle index must be valid.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">isSolved</span><span class="s2">() : </span><span class="s3">&quot;A new game must not start solved.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;A new game must clear undo history.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">completionEventPending </span><span class="s2">: </span><span class="s3">&quot;A new game must not trigger completion.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">boardMatchesInitial</span><span class="s2">() : </span><span class="s3">&quot;A new game must load the selected initial puzzle.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Loads a specific puzzle by index.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">currentPuzzleIndex index of the puzzle to load</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">newGame</span><span class="s2">(</span><span class="s0">int </span><span class="s1">currentPuzzleIndex</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">currentPuzzleIndex </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">currentPuzzleIndex </span><span class="s2">&lt; </span><span class="s1">puzzles</span><span class="s2">.</span><span class="s1">size</span><span class="s2">() : </span><span class="s3">&quot;Puzzle index out of bounds&quot;</span><span class="s2">;</span>
+
+        <span class="s5">// Load the selected puzzle and rebuild all game state from it.</span>
+        <span class="s1">Puzzle puzzle </span><span class="s2">= </span><span class="s1">puzzles</span><span class="s2">.</span><span class="s1">get</span><span class="s2">(</span><span class="s1">currentPuzzleIndex</span><span class="s2">);</span>
+        <span class="s0">int</span><span class="s2">[][] </span><span class="s1">givens </span><span class="s2">= </span><span class="s1">puzzle</span><span class="s2">.</span><span class="s1">givenGrid</span><span class="s2">();</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">currentPuzzleIndex </span><span class="s2">= </span><span class="s1">currentPuzzleIndex</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">initial </span><span class="s2">= </span><span class="s1">Board</span><span class="s2">.</span><span class="s1">deepCopy</span><span class="s2">(</span><span class="s1">givens</span><span class="s2">);</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">board </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Board</span><span class="s2">(</span><span class="s1">givens</span><span class="s2">);</span>
+
+        <span class="s5">// A new puzzle starts with a clean undo history and no pending completion event.</span>
+        <span class="s1">history</span><span class="s2">.</span><span class="s1">clear</span><span class="s2">();</span>
+        <span class="s1">solved </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+        <span class="s1">completionEventPending </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+
+        <span class="s5">// Build a solved reference grid once.</span>
+        <span class="s1">solution </span><span class="s2">= </span><span class="s1">Board</span><span class="s2">.</span><span class="s1">deepCopy</span><span class="s2">(</span><span class="s1">initial</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">solveInPlace</span><span class="s2">(</span><span class="s1">solution</span><span class="s2">)) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalStateException</span><span class="s2">(</span><span class="s3">&quot;Puzzle has no solution&quot;</span><span class="s2">);</span>
+        <span class="s2">}</span>
+
+        <span class="s1">changed</span><span class="s2">();</span>
+        <span class="s0">assert </span><span class="s1">postNewGameCheck</span><span class="s2">(</span><span class="s1">givens</span><span class="s2">) : </span><span class="s3">&quot;Illegal game data loading.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Marks the model as changed and notifies all observers.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">changed</span><span class="s2">() {</span>
+        <span class="s1">setChanged</span><span class="s2">();</span>
+        <span class="s1">notifyObservers</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether a cell address is inside the 9x9 board.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if rows and columns are in the board</span>
+     <span class="s6">*/</span>
+    <span class="s0">private static boolean </span><span class="s1">inRange</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">return </span><span class="s1">row </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">row </span><span class="s2">&lt; </span><span class="s1">SIZE </span><span class="s2">&amp;&amp; </span><span class="s1">column </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">column </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns the current value stored in one cell</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">the current value, where 0 means empty</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+       @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+       @ ensures 0 &lt;= \result &amp;&amp; \result &lt;= 9; 
+     */</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public int </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+        <span class="s0">int </span><span class="s1">result </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">result </span><span class="s2">&lt;= </span><span class="s4">9 </span><span class="s2">:</span><span class="s3">&quot;Cell value must be between 0 and 9.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether a cell is fixed by the original puzzle.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the cell is a given cell</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ ensures \result &lt;==&gt; initial[row][column] != 0; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isFixed</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isFixed</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== (</span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">] != </span><span class="s4">0</span><span class="s2">) :</span><span class="s3">&quot;Fixed-state must match the initial givens.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether a cell is editable by the player.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the cell is not fixed</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ ensures \result &lt;==&gt; !isFixed(row, column); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">canBeEdit</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">canBeEdit</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== !</span><span class="s1">isFixed</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Fixed cell cannot be edited.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Writes a value into one editable cell.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">value value to write</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the request is accepted, otherwise false</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ assignable board, history, solved, completionEventPending; 
+      @ ensures (value &lt; 1 || value &gt; 9 || \old(isFixed(row, column))) ==&gt; !\result; 
+      @ ensures !\result ==&gt; getCellValue(row, column) == \old(getCellValue(row, column)); 
+      @ ensures \result ==&gt; getCellValue(row, column) == value; 
+      @ ensures \result &amp;&amp; \old(getCellValue(row, column)) != value ==&gt; canUndo(); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">setValue</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">, </span><span class="s0">int </span><span class="s1">value</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+
+        <span class="s0">int </span><span class="s1">oldCellValue </span><span class="s2">= </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+
+        <span class="s5">// Public Model input only accepts digits 1..9.</span>
+        <span class="s5">// Clearing must be done through clearValue().</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">&lt; </span><span class="s4">1 </span><span class="s2">|| </span><span class="s1">value </span><span class="s2">&gt; </span><span class="s4">9</span><span class="s2">) {</span>
+            <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">oldCellValue</span>
+                    <span class="s2">: </span><span class="s3">&quot;Rejected invalid input must not change the board.&quot;</span><span class="s2">;</span>
+            <span class="s0">return false</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">isFixed</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)) {</span>
+            <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">oldCellValue</span>
+                    <span class="s2">: </span><span class="s3">&quot;Rejected writes to fixed cells must not change the board.&quot;</span><span class="s2">;</span>
+            <span class="s0">return false</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">boolean </span><span class="s1">accepted </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">setValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">, </span><span class="s1">value</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">accepted </span><span class="s2">: </span><span class="s3">&quot;A valid write to an editable cell should be accepted.&quot;</span><span class="s2">;</span>
+
+        <span class="s5">// The request is accepted, but no real state change happens.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">oldCellValue </span><span class="s2">== </span><span class="s1">value</span><span class="s2">) {</span>
+            <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">value</span>
+                    <span class="s2">: </span><span class="s3">&quot;Cell value should stay unchanged.&quot;</span><span class="s2">;</span>
+            <span class="s0">return true</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s1">recordSingleUndo</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">, </span><span class="s1">oldCellValue</span><span class="s2">, </span><span class="s1">value</span><span class="s2">);</span>
+        <span class="s1">updateCompletionStateAfterBoardChange</span><span class="s2">();</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+
+        <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">value </span><span class="s2">: </span><span class="s3">&quot;Change is not successful.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;A real accepted write must create one undo record.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Clears one editable cell.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the request is accepted, otherwise false</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ assignable board, history, solved, completionEventPending; 
+      @ ensures !\result ==&gt; getCellValue(row, column) == \old(getCellValue(row, column)); 
+      @ ensures \result ==&gt; getCellValue(row, column) == 0; 
+      @ ensures \result &amp;&amp; \old(getCellValue(row, column)) != 0 ==&gt; canUndo(); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">clearValue</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+
+        <span class="s0">int  </span><span class="s1">oldCellValue </span><span class="s2">= </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+
+        <span class="s0">if  </span><span class="s2">(!</span><span class="s1">board</span><span class="s2">.</span><span class="s1">clearValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)) {</span>
+            <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">oldCellValue </span><span class="s2">: </span><span class="s3">&quot;Rejected clears must not change the board.&quot;</span><span class="s2">;</span>
+            <span class="s0">return false</span><span class="s2">;</span>
+        <span class="s2">}</span>
+        <span class="s5">// Nothing changes, so there is no undo record and no observer notification.</span>
+        <span class="s0">if  </span><span class="s2">(</span><span class="s1">oldCellValue </span><span class="s2">== </span><span class="s4">0</span><span class="s2">) {</span>
+            <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s4">0 </span><span class="s2">: </span><span class="s3">&quot;Empty cell should remain empty.&quot;</span><span class="s2">;</span>
+            <span class="s0">return true</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s1">recordSingleUndo</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">, </span><span class="s1">oldCellValue</span><span class="s2">, </span><span class="s4">0</span><span class="s2">);</span>
+        <span class="s1">updateCompletionStateAfterBoardChange</span><span class="s2">();</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+        <span class="s0">assert </span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s4">0 </span><span class="s2">: </span><span class="s3">&quot;Clear is not successful&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;A real accepted clear must create one undo record.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether a cell is currently empty.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the cell value is 0</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ ensures \result &lt;==&gt; getCellValue(row, column) == 0; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isEmpty</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+        <span class="s0">boolean </span><span class="s1">empty </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isEmpty</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">empty </span><span class="s2">== (</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s4">0</span><span class="s2">) : </span><span class="s3">&quot;Empty cell should be 0.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">empty</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">whether validation feedback is enabled.</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ ensures \result &lt;==&gt; validationFeedbackEnabled; @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isValidationFeedbackEnabled</span><span class="s2">() {</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">validationFeedbackEnabled</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== </span><span class="s1">validationFeedbackEnabled </span><span class="s2">: </span><span class="s3">&quot;Returned validation flag must match the field.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Enables or disables validation feedback.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">validationFeedbackEnabled true to enable immediate invalid-cell feedback</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ assignable validationFeedbackEnabled; 
+      @ ensures isValidationFeedbackEnabled() == validationFeedbackEnabled; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">setValidationFeedbackEnabled</span><span class="s2">(</span><span class="s0">boolean </span><span class="s1">validationFeedbackEnabled</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">validationFeedbackEnabled </span><span class="s2">== </span><span class="s1">validationFeedbackEnabled</span><span class="s2">) {</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">validationFeedbackEnabled </span><span class="s2">= </span><span class="s1">validationFeedbackEnabled</span><span class="s2">;</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+
+        <span class="s0">assert this</span><span class="s2">.</span><span class="s1">validationFeedbackEnabled </span><span class="s2">== </span><span class="s1">validationFeedbackEnabled</span>
+                <span class="s2">: </span><span class="s3">&quot;Validation flag was not updated correctly.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">isValidationFeedbackEnabled</span><span class="s2">() == </span><span class="s1">validationFeedbackEnabled</span><span class="s2">;</span>
+
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">whether the board currently has no duplicate non-zero values.</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ ensures \result &lt;==&gt; 
+      @     (\forall int r, c; 
+      @         0 &lt;= r &amp;&amp; r &lt; SIZE &amp;&amp; 0 &lt;= c &amp;&amp; c &lt; SIZE; 
+      @         !isCellInvalid(r, c)); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isBoardValid</span><span class="s2">() {</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isBoardValid</span><span class="s2">();</span>
+
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isBoardValid</span><span class="s2">()</span>
+                <span class="s2">: </span><span class="s3">&quot;Board validity result must match the board state.&quot;</span><span class="s2">;</span>
+
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether one cell is currently invalid because of duplication.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row row index from 0</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column column index from 0</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the cell is duplicated in its row, column, or box</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ ensures isEmpty(row, column) ==&gt; !\result; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isCellInvalid</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isCellInvalid</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">isEmpty</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) || !</span><span class="s1">result </span><span class="s2">: </span><span class="s3">&quot;Empty cells must never be marked invalid.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Checks that the board was loaded exactly from the selected givens.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private boolean </span><span class="s1">postNewGameCheck</span><span class="s2">(</span><span class="s0">int</span><span class="s2">[][] </span><span class="s1">givens</span><span class="s2">) {</span>
+        <span class="s0">for  </span><span class="s2">(</span><span class="s0">int </span><span class="s1">row </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">row </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">row</span><span class="s2">++) {</span>
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">column </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">column </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">column</span><span class="s2">++) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) != </span><span class="s1">givens</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">]) {</span><span class="s0">return  false</span><span class="s2">;}</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">] != </span><span class="s1">givens</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">]) {</span><span class="s0">return false</span><span class="s2">;}</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">board</span><span class="s2">.</span><span class="s1">isFixed</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) != (</span><span class="s1">givens</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">] != </span><span class="s4">0</span><span class="s2">)) {</span><span class="s0">return false</span><span class="s2">;}</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether the puzzle is solved.</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if the puzzle is solved</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ ensures \result &lt;==&gt; solved; 
+      @ ensures \result ==&gt; isBoardValid(); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isSolved</span><span class="s2">() {</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">solved</span><span class="s2">;</span>
+
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== </span><span class="s1">solved </span><span class="s2">: </span><span class="s3">&quot;Solved result must match the solved field.&quot;</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">result</span><span class="s2">) {</span>
+            <span class="s0">assert </span><span class="s1">isBoardValid</span><span class="s2">() : </span><span class="s3">&quot;A solved board must be valid.&quot;</span><span class="s2">;</span>
+            <span class="s0">assert </span><span class="s1">isBoardFull</span><span class="s2">() : </span><span class="s3">&quot;A solved board must be full.&quot;</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Consumes the one-shot completion event used by the UI.</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true once after the puzzle becomes solved</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ assignable completionEventPending; 
+      @ ensures \result &lt;==&gt; \old(completionEventPending); 
+      @ ensures !completionEventPending; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">consumeCompletionEvent</span><span class="s2">() {</span>
+        <span class="s0">boolean </span><span class="s1">oldPending </span><span class="s2">= </span><span class="s1">completionEventPending</span><span class="s2">;</span>
+        <span class="s0">boolean </span><span class="s1">result</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">completionEventPending</span><span class="s2">) {</span>
+            <span class="s1">completionEventPending </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+            <span class="s1">result </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+            <span class="s1">result </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+        <span class="s2">}</span>
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== </span><span class="s1">oldPending </span><span class="s2">: </span><span class="s3">&quot;Return value must equal the old pending completion-event state.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">completionEventPending </span><span class="s2">: </span><span class="s3">&quot;Completion event flag must be cleared after consumption.&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether the board contains no empty cells.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private boolean </span><span class="s1">isBoardFull</span><span class="s2">() {</span>
+        <span class="s0">for  </span><span class="s2">(</span><span class="s0">int </span><span class="s1">row </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">row </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">row</span><span class="s2">++) {</span>
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">column </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">column </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">column</span><span class="s2">++) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s4">0</span><span class="s2">) {</span><span class="s0">return false</span><span class="s2">;}</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether the current board is both full and valid.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private boolean </span><span class="s1">isCompletedAndValid</span><span class="s2">() {</span>
+        <span class="s0">return </span><span class="s1">isBoardFull</span><span class="s2">() &amp;&amp; </span><span class="s1">isBoardValid</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Updates solved-state flags after a board change.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">updateCompletionStateAfterBoardChange</span><span class="s2">() {</span>
+        <span class="s0">boolean </span><span class="s1">wasSolved </span><span class="s2">= </span><span class="s1">solved</span><span class="s2">;</span>
+        <span class="s1">solved </span><span class="s2">= </span><span class="s1">isCompletedAndValid</span><span class="s2">();</span>
+        <span class="s5">// Check whether the state is changed</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">wasSolved </span><span class="s2">&amp;&amp; </span><span class="s1">solved</span><span class="s2">) {</span>
+            <span class="s1">completionEventPending </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Enables or disables random puzzle selection.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">enabled true to load a random puzzle, false to load one by one</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ assignable randomPuzzleSelectionEnabled; 
+      @ ensures randomPuzzleSelectionEnabled == enabled; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">setRandomPuzzleSelectionEnabled</span><span class="s2">(</span><span class="s0">boolean </span><span class="s1">enabled</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">randomPuzzleSelectionEnabled </span><span class="s2">== </span><span class="s1">enabled</span><span class="s2">) {</span>
+            <span class="s0">assert this</span><span class="s2">.</span><span class="s1">randomPuzzleSelectionEnabled </span><span class="s2">== </span><span class="s1">enabled</span>
+                    <span class="s2">: </span><span class="s3">&quot;Random-selection flag should already match the requested state.&quot;</span><span class="s2">;</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">randomPuzzleSelectionEnabled </span><span class="s2">= </span><span class="s1">enabled</span><span class="s2">;</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+
+        <span class="s0">assert this</span><span class="s2">.</span><span class="s1">randomPuzzleSelectionEnabled </span><span class="s2">== </span><span class="s1">enabled</span>
+                <span class="s2">: </span><span class="s3">&quot;Random-selection flag was not updated correctly.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Enables or disables the hint feature.</span>
+     <span class="s6">*</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">enabled true to allow hints</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ assignable hintEnabled; 
+      @ ensures hintEnabled == enabled; 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">setHintEnabled</span><span class="s2">(</span><span class="s0">boolean </span><span class="s1">enabled</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">hintEnabled </span><span class="s2">== </span><span class="s1">enabled</span><span class="s2">) {</span>
+            <span class="s0">assert this</span><span class="s2">.</span><span class="s1">hintEnabled </span><span class="s2">== </span><span class="s1">enabled</span>
+                    <span class="s2">: </span><span class="s3">&quot;Hint flag should already match the requested state.&quot;</span><span class="s2">;</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">hintEnabled </span><span class="s2">= </span><span class="s1">enabled</span><span class="s2">;</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+
+        <span class="s0">assert this</span><span class="s2">.</span><span class="s1">hintEnabled </span><span class="s2">== </span><span class="s1">enabled</span>
+                <span class="s2">: </span><span class="s3">&quot;Hint flag was not updated correctly.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Reverts the most recent accepted board-changing action.</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if one move is undone, otherwise false</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ assignable board, history, solved, completionEventPending; 
+      @ ensures !\old(canUndo()) ==&gt; !\result; 
+      @ ensures \result ==&gt; !canUndo(); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">undo</span><span class="s2">() {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">history</span><span class="s2">.</span><span class="s1">isEmpty</span><span class="s2">()) {</span>
+            <span class="s0">assert </span><span class="s2">!</span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;Undo must be unavailable when the history is empty.&quot;</span><span class="s2">;</span>
+            <span class="s0">return false</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s5">// Get the previous value of the most recent accepted board change.</span>
+        <span class="s1">Move latestMove </span><span class="s2">= </span><span class="s1">history</span><span class="s2">.</span><span class="s1">pop</span><span class="s2">();</span>
+        <span class="s0">boolean </span><span class="s1">restored </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">setValue</span><span class="s2">(</span><span class="s1">latestMove</span><span class="s2">.</span><span class="s1">row</span><span class="s2">, </span><span class="s1">latestMove</span><span class="s2">.</span><span class="s1">col</span><span class="s2">, </span><span class="s1">latestMove</span><span class="s2">.</span><span class="s1">oldValue</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">restored </span><span class="s2">: </span><span class="s3">&quot;There must have a record of action&quot;</span><span class="s2">;</span>
+        <span class="s1">updateCompletionStateAfterBoardChange</span><span class="s2">();</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+        <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">latestMove</span><span class="s2">.</span><span class="s1">row</span><span class="s2">, </span><span class="s1">latestMove</span><span class="s2">.</span><span class="s1">col</span><span class="s2">) == </span><span class="s1">latestMove</span><span class="s2">.</span><span class="s1">oldValue </span><span class="s2">: </span><span class="s3">&quot;Undo should restore the previous value.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;Single-level undo must leave no further undo record after success.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether a single undo action is currently available.</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+  @ ensures \result &lt;==&gt; !history.isEmpty(); 
+  @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">canUndo</span><span class="s2">() {</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= !</span><span class="s1">history</span><span class="s2">.</span><span class="s1">isEmpty</span><span class="s2">();</span>
+
+        <span class="s0">assert </span><span class="s1">history</span><span class="s2">.</span><span class="s1">size</span><span class="s2">() &lt;= </span><span class="s4">1 </span><span class="s2">: </span><span class="s3">&quot;Only one undo record should be kept.&quot;</span><span class="s2">;</span>
+
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Restores the current puzzle to its initial state.</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">always true after the board is reset</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ assignable board, history, solved, completionEventPending; 
+      @ ensures \result; 
+      @ ensures !isSolved(); 
+      @ ensures !canUndo(); 
+      @ ensures (\forall int r, c; 0 &lt;= r &amp;&amp; r &lt; SIZE &amp;&amp; 0 &lt;= c &amp;&amp; c &lt; SIZE; getCellValue(r, c) == initial[r][c]); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">reset</span><span class="s2">() {</span>
+        <span class="s1">board </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Board</span><span class="s2">(</span><span class="s1">initial</span><span class="s2">);</span>
+        <span class="s1">history</span><span class="s2">.</span><span class="s1">clear</span><span class="s2">();</span>
+
+        <span class="s1">solved </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+        <span class="s1">completionEventPending </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">isSolved</span><span class="s2">() : </span><span class="s3">&quot;Reset puzzle must not be solved.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s2">!</span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;Reset must clear undo history.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">boardMatchesInitial</span><span class="s2">() : </span><span class="s3">&quot;Reset must restore every cell to the initial puzzle.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Checks whether the board is the same as initialed</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if it matches</span>
+     <span class="s6">*/</span>
+    <span class="s0">private boolean </span><span class="s1">boardMatchesInitial</span><span class="s2">() {</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">row </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">row </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">row</span><span class="s2">++) {</span>
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">column </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">column </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">column</span><span class="s2">++) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) != </span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">]) {</span>
+                    <span class="s0">return false</span><span class="s2">;</span>
+                <span class="s2">}</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Reveals the correct value for one eligible empty editable cell.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row zero-based row index</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column zero-based column index</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if a hint is applied, otherwise false</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ requires 0 &lt;= row &amp;&amp; row &lt; SIZE &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE; 
+      @ assignable board, history, solved, completionEventPending; 
+      @ ensures !\old(canApplyHint(row, column)) ==&gt; !\result; 
+      @ ensures \result ==&gt; getCellValue(row, column) == solution[row][column]; 
+      @ ensures \result ==&gt; canUndo(); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">applyHint</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">assert </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Row or column of the game board is out of bounds&quot;</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">canApplyHint</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)) {</span>
+            <span class="s0">return false</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">int </span><span class="s1">oldValue </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+        <span class="s0">int </span><span class="s1">correctValue </span><span class="s2">= </span><span class="s1">solution</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">];</span>
+
+        <span class="s0">boolean </span><span class="s1">changedCell </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">setValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">, </span><span class="s1">correctValue</span><span class="s2">);</span>
+        <span class="s0">assert </span><span class="s1">changedCell </span><span class="s2">: </span><span class="s3">&quot;A valid hint should always be applicable to the selected cell.&quot;</span><span class="s2">;</span>
+
+        <span class="s1">recordSingleUndo</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">, </span><span class="s1">oldValue</span><span class="s2">, </span><span class="s1">correctValue</span><span class="s2">);</span>
+        <span class="s1">updateCompletionStateAfterBoardChange</span><span class="s2">();</span>
+        <span class="s1">changed</span><span class="s2">();</span>
+        <span class="s0">assert </span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">correctValue </span><span class="s2">: </span><span class="s3">&quot;Hint should write the solved value.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">canUndo</span><span class="s2">() : </span><span class="s3">&quot;A successful hint must create one undo record.&quot;</span><span class="s2">;</span>
+        <span class="s1">assertInvariants</span><span class="s2">();</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether a hint may be applied to one cell.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">row zero-based row index</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">column zero-based column index</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if hints are enabled and the cell is editable and empty</span>
+     <span class="s6">*/</span>
+    <span class="s5">/*@ 
+      @ ensures \result &lt;==&gt; (hintEnabled 
+      @                      &amp;&amp; solution != null 
+      @                      &amp;&amp; 0 &lt;= row &amp;&amp; row &lt; SIZE 
+      @                      &amp;&amp; 0 &lt;= column &amp;&amp; column &lt; SIZE 
+      @                      &amp;&amp; canBeEdit(row, column) 
+      @                      &amp;&amp; isEmpty(row, column)); 
+      @*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">canApplyHint</span><span class="s2">(</span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">) {</span>
+        <span class="s0">boolean </span><span class="s1">result </span><span class="s2">= </span><span class="s1">hintEnabled</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">solution </span><span class="s2">!= </span><span class="s0">null</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">board</span><span class="s2">.</span><span class="s1">canBeEdit</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isEmpty</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+
+        <span class="s0">assert </span><span class="s1">result </span><span class="s2">== (</span><span class="s1">hintEnabled</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">solution </span><span class="s2">!= </span><span class="s0">null</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">inRange</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">board</span><span class="s2">.</span><span class="s1">canBeEdit</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">)</span>
+                <span class="s2">&amp;&amp; </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isEmpty</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">))</span>
+                <span class="s2">: </span><span class="s3">&quot;Hint applicability must match its defining condition.&quot;</span><span class="s2">;</span>
+
+        <span class="s0">return </span><span class="s1">result</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Returns whether placing a value at a position is safe in the candidate grid.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private static boolean </span><span class="s1">isSafe</span><span class="s2">(</span><span class="s0">int</span><span class="s2">[][] </span><span class="s1">grid</span><span class="s2">, </span><span class="s0">int </span><span class="s1">row</span><span class="s2">, </span><span class="s0">int </span><span class="s1">column</span><span class="s2">, </span><span class="s0">int </span><span class="s1">value</span><span class="s2">) {</span>
+        <span class="s5">// Check each row</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">c </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">c </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">c</span><span class="s2">++) {</span>
+            <span class="s0">if </span><span class="s2">(</span><span class="s1">grid</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">c</span><span class="s2">] == </span><span class="s1">value</span><span class="s2">) {</span><span class="s0">return false</span><span class="s2">;}</span>
+        <span class="s2">}</span>
+        <span class="s5">// Check each column</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">r </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">r </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">r</span><span class="s2">++) {</span>
+            <span class="s0">if </span><span class="s2">(</span><span class="s1">grid</span><span class="s2">[</span><span class="s1">r</span><span class="s2">][</span><span class="s1">column</span><span class="s2">] == </span><span class="s1">value</span><span class="s2">) {</span><span class="s0">return false</span><span class="s2">;}</span>
+        <span class="s2">}</span>
+        <span class="s5">//check each box</span>
+        <span class="s0">int </span><span class="s1">br </span><span class="s2">= (</span><span class="s1">row</span><span class="s2">/</span><span class="s4">3</span><span class="s2">) * </span><span class="s4">3</span><span class="s2">;</span>
+        <span class="s0">int </span><span class="s1">bc </span><span class="s2">= (</span><span class="s1">column</span><span class="s2">/</span><span class="s4">3</span><span class="s2">) * </span><span class="s4">3</span><span class="s2">;</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">dr </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">dr </span><span class="s2">&lt; </span><span class="s4">3</span><span class="s2">; </span><span class="s1">dr</span><span class="s2">++) {</span>
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">dc </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">dc </span><span class="s2">&lt; </span><span class="s4">3</span><span class="s2">; </span><span class="s1">dc</span><span class="s2">++) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">grid</span><span class="s2">[</span><span class="s1">br </span><span class="s2">+ </span><span class="s1">dr</span><span class="s2">][</span><span class="s1">bc </span><span class="s2">+ </span><span class="s1">dc</span><span class="s2">] == </span><span class="s1">value</span><span class="s2">) {</span><span class="s0">return false</span><span class="s2">;}</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Finds the next empty cell in a candidate grid.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">grid 9x9 candidate grid</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">{row, column} for the next empty cell, or null when full</span>
+     <span class="s6">*/</span>
+    <span class="s0">private static int</span><span class="s2">[] </span><span class="s1">findEmpty</span><span class="s2">(</span><span class="s0">int</span><span class="s2">[][] </span><span class="s1">grid</span><span class="s2">) {</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">r </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">r </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">r</span><span class="s2">++) {</span>
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">c </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">c </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">c</span><span class="s2">++) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">grid</span><span class="s2">[</span><span class="s1">r</span><span class="s2">][</span><span class="s1">c</span><span class="s2">] == </span><span class="s4">0</span><span class="s2">) </span><span class="s0">return new int</span><span class="s2">[]{</span><span class="s1">r</span><span class="s2">, </span><span class="s1">c</span><span class="s2">};</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return null</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Solves a Sudoku grid in place.</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">grid 9x9 candidate grid</span>
+     <span class="s6">* </span><span class="s7">@return </span><span class="s6">true if a solution is found</span>
+     <span class="s6">*/</span>
+    <span class="s0">private static boolean </span><span class="s1">solveInPlace</span><span class="s2">(</span><span class="s0">int</span><span class="s2">[][] </span><span class="s1">grid</span><span class="s2">) {</span>
+        <span class="s5">// Get all empty cells.</span>
+        <span class="s0">int</span><span class="s2">[] </span><span class="s1">pos </span><span class="s2">= </span><span class="s1">findEmpty</span><span class="s2">(</span><span class="s1">grid</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">pos </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) </span><span class="s0">return true</span><span class="s2">; </span><span class="s5">// solved</span>
+
+        <span class="s0">int </span><span class="s1">r </span><span class="s2">= </span><span class="s1">pos</span><span class="s2">[</span><span class="s4">0</span><span class="s2">], </span><span class="s1">c </span><span class="s2">= </span><span class="s1">pos</span><span class="s2">[</span><span class="s4">1</span><span class="s2">]; </span><span class="s5">// Undo the trial value and continue searching</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">v </span><span class="s2">= </span><span class="s4">1</span><span class="s2">; </span><span class="s1">v </span><span class="s2">&lt;= </span><span class="s4">9</span><span class="s2">; </span><span class="s1">v</span><span class="s2">++) {</span>
+            <span class="s0">if </span><span class="s2">(</span><span class="s1">isSafe</span><span class="s2">(</span><span class="s1">grid</span><span class="s2">, </span><span class="s1">r</span><span class="s2">, </span><span class="s1">c</span><span class="s2">, </span><span class="s1">v</span><span class="s2">)) {</span>
+                <span class="s1">grid</span><span class="s2">[</span><span class="s1">r</span><span class="s2">][</span><span class="s1">c</span><span class="s2">] = </span><span class="s1">v</span><span class="s2">;</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">solveInPlace</span><span class="s2">(</span><span class="s1">grid</span><span class="s2">)) </span><span class="s0">return true</span><span class="s2">;</span>
+                <span class="s1">grid</span><span class="s2">[</span><span class="s1">r</span><span class="s2">][</span><span class="s1">c</span><span class="s2">] = </span><span class="s4">0</span><span class="s2">;</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Runtime checks for the class invariants.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">assertInvariants</span><span class="s2">() {</span>
+        <span class="s0">assert </span><span class="s1">board </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">: </span><span class="s3">&quot;The game board must not be null&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">initial </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s1">initial</span><span class="s2">.</span><span class="s1">length </span><span class="s2">== </span><span class="s1">SIZE </span><span class="s2">: </span><span class="s3">&quot;The initial board's row number should be 9&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">solution </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s1">solution</span><span class="s2">.</span><span class="s1">length </span><span class="s2">== </span><span class="s1">SIZE </span><span class="s2">: </span><span class="s3">&quot;The solution board's row number should be 9&quot;</span><span class="s2">;</span>
+
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">row </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">row </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">row</span><span class="s2">++) {</span>
+            <span class="s0">assert </span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">] != </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">].</span><span class="s1">length </span><span class="s2">== </span><span class="s1">SIZE </span><span class="s2">: </span><span class="s3">&quot;The initial board's column number should be 9&quot;</span><span class="s2">;</span>
+            <span class="s0">assert </span><span class="s1">solution</span><span class="s2">[</span><span class="s1">row</span><span class="s2">] != </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s1">solution</span><span class="s2">[</span><span class="s1">row</span><span class="s2">].</span><span class="s1">length </span><span class="s2">== </span><span class="s1">SIZE </span><span class="s2">: </span><span class="s3">&quot;The solution board's column number should be 9&quot;</span><span class="s2">;</span>
+
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">column </span><span class="s2">= </span><span class="s4">0</span><span class="s2">; </span><span class="s1">column </span><span class="s2">&lt; </span><span class="s1">SIZE</span><span class="s2">; </span><span class="s1">column</span><span class="s2">++) {</span>
+                <span class="s0">int </span><span class="s1">valueOfBoard </span><span class="s2">= </span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">);</span>
+                <span class="s0">int </span><span class="s1">valueOfInitial </span><span class="s2">= </span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">];</span>
+                <span class="s0">int </span><span class="s1">valueOfSolution </span><span class="s2">= </span><span class="s1">solution</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">];</span>
+
+                <span class="s0">assert </span><span class="s1">valueOfBoard </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">valueOfBoard </span><span class="s2">&lt;= </span><span class="s4">9 </span><span class="s2">: </span><span class="s3">&quot;The range of the number in the game board should be between 0 and 9.&quot;</span><span class="s2">;</span>
+                <span class="s0">assert </span><span class="s1">valueOfInitial </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">valueOfInitial </span><span class="s2">&lt;= </span><span class="s4">9 </span><span class="s2">: </span><span class="s3">&quot;The range of the number in the initial board should be between 0 and 9.&quot;</span><span class="s2">;</span>
+                <span class="s0">assert </span><span class="s1">valueOfSolution </span><span class="s2">&gt;= </span><span class="s4">1 </span><span class="s2">&amp;&amp; </span><span class="s1">valueOfSolution </span><span class="s2">&lt;= </span><span class="s4">9 </span><span class="s2">: </span><span class="s3">&quot;The range of the number in the solution board should be between 1 and 9.&quot;</span><span class="s2">;</span>
+
+                <span class="s0">assert </span><span class="s1">board</span><span class="s2">.</span><span class="s1">isFixed</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == (</span><span class="s1">valueOfInitial </span><span class="s2">!= </span><span class="s4">0</span><span class="s2">) : </span><span class="s3">&quot;Fixed cells must correspond to non-zero givens.&quot;</span><span class="s2">;</span>
+                <span class="s0">assert </span><span class="s2">!</span><span class="s1">board</span><span class="s2">.</span><span class="s1">isFixed</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) || </span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) == </span><span class="s1">initial</span><span class="s2">[</span><span class="s1">row</span><span class="s2">][</span><span class="s1">column</span><span class="s2">] : </span><span class="s3">&quot;Fixed cells can never be changed.&quot;</span><span class="s2">;</span>
+                <span class="s0">assert </span><span class="s1">board</span><span class="s2">.</span><span class="s1">getCellValue</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) != </span><span class="s4">0 </span><span class="s2">|| !</span><span class="s1">board</span><span class="s2">.</span><span class="s1">isCellInvalid</span><span class="s2">(</span><span class="s1">row</span><span class="s2">, </span><span class="s1">column</span><span class="s2">) : </span><span class="s3">&quot;Empty cells are never invalid.&quot;</span><span class="s2">;</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+
+        <span class="s0">assert </span><span class="s1">currentPuzzleIndex </span><span class="s2">&gt;= </span><span class="s4">0 </span><span class="s2">&amp;&amp; </span><span class="s1">currentPuzzleIndex </span><span class="s2">&lt; </span><span class="s1">puzzles</span><span class="s2">.</span><span class="s1">size</span><span class="s2">()</span>
+                <span class="s2">: </span><span class="s3">&quot;Puzzle index should be in range.&quot;</span><span class="s2">;</span>
+        <span class="s0">assert </span><span class="s1">history</span><span class="s2">.</span><span class="s1">size</span><span class="s2">() &lt;= </span><span class="s4">1</span>
+                <span class="s2">: </span><span class="s3">&quot;Single-level undo should keep at most one move.&quot;</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">solved</span><span class="s2">) {</span>
+            <span class="s0">assert </span><span class="s1">isBoardFull</span><span class="s2">() : </span><span class="s3">&quot;The pre-condition of solved all cells in board is full.&quot;</span><span class="s2">;</span>
+            <span class="s0">assert </span><span class="s1">isBoardValid</span><span class="s2">() : </span><span class="s3">&quot;The pre-condition of solved all cells in board is valid.&quot;</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

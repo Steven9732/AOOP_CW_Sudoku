@@ -1,0 +1,41 @@
+<html>
+<head>
+<title>GUIMain.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+GUIMain.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">app</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">model</span><span class="s2">.</span><span class="s1">SudokuModel</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">model</span><span class="s2">.</span><span class="s1">Model</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">controller</span><span class="s2">.</span><span class="s1">SudokuController</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">view</span><span class="s2">.</span><span class="s1">SudokuFrame</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">javax</span><span class="s2">.</span><span class="s1">swing</span><span class="s2">.</span><span class="s1">SwingUtilities</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">GUIMain </span><span class="s2">{</span>
+    <span class="s0">public static void </span><span class="s1">main</span><span class="s2">(</span><span class="s1">String</span><span class="s2">[] </span><span class="s1">args</span><span class="s2">) {</span>
+        <span class="s1">SwingUtilities</span><span class="s2">.</span><span class="s1">invokeLater</span><span class="s2">(() </span><span class="s1">-&gt; </span><span class="s2">{</span>
+            <span class="s1">SudokuModel model </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Model</span><span class="s2">();</span>
+            <span class="s1">SudokuFrame frame </span><span class="s2">= </span><span class="s0">new </span><span class="s1">SudokuFrame</span><span class="s2">();</span>
+            <span class="s1">SudokuController controller </span><span class="s2">= </span><span class="s0">new </span><span class="s1">SudokuController</span><span class="s2">(</span><span class="s1">model</span><span class="s2">, </span><span class="s1">frame</span><span class="s2">);</span>
+
+            <span class="s1">frame</span><span class="s2">.</span><span class="s1">bind</span><span class="s2">(</span><span class="s1">model</span><span class="s2">, </span><span class="s1">controller</span><span class="s2">);</span>
+
+            <span class="s1">frame</span><span class="s2">.</span><span class="s1">setVisible</span><span class="s2">(</span><span class="s0">true</span><span class="s2">);</span>
+            <span class="s1">frame</span><span class="s2">.</span><span class="s1">requestFocusInWindow</span><span class="s2">();</span>
+        <span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">}</span></pre>
+</body>
+</html>

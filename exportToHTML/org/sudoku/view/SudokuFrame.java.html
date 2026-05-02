@@ -1,0 +1,182 @@
+<html>
+<head>
+<title>SudokuFrame.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+SudokuFrame.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">view</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">controller</span><span class="s2">.</span><span class="s1">SudokuController</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">sudoku</span><span class="s2">.</span><span class="s1">model</span><span class="s2">.</span><span class="s1">SudokuModel</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">javax</span><span class="s2">.</span><span class="s1">swing</span><span class="s2">.*;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">awt</span><span class="s2">.*;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">Observable</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">Observer</span><span class="s2">;</span>
+
+<span class="s1">@SuppressWarnings</span><span class="s2">(</span><span class="s3">&quot;deprecation&quot;</span><span class="s2">)</span>
+<span class="s0">public final class </span><span class="s1">SudokuFrame </span><span class="s0">extends </span><span class="s1">JFrame </span><span class="s0">implements </span><span class="s1">Observer </span><span class="s2">{</span>
+    <span class="s0">private </span><span class="s1">SudokuModel model</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">SudokuController controller</span><span class="s2">;</span>
+
+    <span class="s0">private final </span><span class="s1">BoardPanel boardPanel </span><span class="s2">= </span><span class="s0">new </span><span class="s1">BoardPanel</span><span class="s2">();</span>
+
+    <span class="s4">// 5 buttons</span>
+    <span class="s0">private final </span><span class="s1">JButton NewGameButton </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">(</span><span class="s3">&quot;New Game&quot;</span><span class="s2">);</span>
+    <span class="s0">private final </span><span class="s1">JButton ResetButton </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">(</span><span class="s3">&quot;Reset&quot;</span><span class="s2">);</span>
+    <span class="s0">private final </span><span class="s1">JButton UndoButton </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">(</span><span class="s3">&quot;Undo&quot;</span><span class="s2">);</span>
+    <span class="s0">private final </span><span class="s1">JButton EraseButton </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">(</span><span class="s3">&quot;Erase&quot;</span><span class="s2">);</span>
+    <span class="s0">private final </span><span class="s1">JButton HintButton </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">(</span><span class="s3">&quot;Hint&quot;</span><span class="s2">);</span>
+
+    <span class="s4">// GUI runtime toggles</span>
+    <span class="s0">private final </span><span class="s1">JCheckBox ValidationCB </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JCheckBox</span><span class="s2">(</span><span class="s3">&quot;Validation feedback&quot;</span><span class="s2">, </span><span class="s0">true</span><span class="s2">);</span>
+    <span class="s0">private final </span><span class="s1">JCheckBox HintCB </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JCheckBox</span><span class="s2">(</span><span class="s3">&quot;Hint enabled&quot;</span><span class="s2">, </span><span class="s0">true</span><span class="s2">);</span>
+    <span class="s0">private final </span><span class="s1">JCheckBox RandomCB </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JCheckBox</span><span class="s2">(</span><span class="s3">&quot;Random puzzles&quot;</span><span class="s2">, </span><span class="s0">true</span><span class="s2">);</span>
+
+    <span class="s4">// Digital Button</span>
+    <span class="s0">private final </span><span class="s1">JButton</span><span class="s2">[] </span><span class="s1">digitButtons </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">[</span><span class="s5">9</span><span class="s2">];</span>
+
+    <span class="s4">// Status line</span>
+    <span class="s0">private final </span><span class="s1">JLabel status </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JLabel</span><span class="s2">(</span><span class="s3">&quot; &quot;</span><span class="s2">);</span>
+
+    <span class="s0">public </span><span class="s1">SudokuFrame</span><span class="s2">() {</span>
+        <span class="s0">super</span><span class="s2">(</span><span class="s3">&quot;Sudoku&quot;</span><span class="s2">);</span>
+        <span class="s1">setDefaultCloseOperation</span><span class="s2">(</span><span class="s1">WindowConstants</span><span class="s2">.</span><span class="s1">EXIT_ON_CLOSE</span><span class="s2">);</span>
+        <span class="s1">setMinimumSize</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Dimension</span><span class="s2">(</span><span class="s5">1000</span><span class="s2">, </span><span class="s5">800</span><span class="s2">));</span>
+
+        <span class="s4">// Left</span>
+        <span class="s1">JPanel left </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JPanel</span><span class="s2">(</span><span class="s0">new </span><span class="s1">BorderLayout</span><span class="s2">());</span>
+        <span class="s1">left</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">boardPanel</span><span class="s2">, </span><span class="s1">BorderLayout</span><span class="s2">.</span><span class="s1">CENTER</span><span class="s2">);</span>
+        <span class="s1">left</span><span class="s2">.</span><span class="s1">setBorder</span><span class="s2">(</span><span class="s1">BorderFactory</span><span class="s2">.</span><span class="s1">createEmptyBorder</span><span class="s2">(</span><span class="s5">12</span><span class="s2">, </span><span class="s5">12</span><span class="s2">, </span><span class="s5">12</span><span class="s2">, </span><span class="s5">12</span><span class="s2">));</span>
+
+        <span class="s4">// Right</span>
+        <span class="s1">JPanel right </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JPanel</span><span class="s2">();</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">setLayout</span><span class="s2">(</span><span class="s0">new </span><span class="s1">BoxLayout</span><span class="s2">(</span><span class="s1">right</span><span class="s2">, </span><span class="s1">BoxLayout</span><span class="s2">.</span><span class="s1">Y_AXIS</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">setBorder</span><span class="s2">(</span><span class="s1">BorderFactory</span><span class="s2">.</span><span class="s1">createEmptyBorder</span><span class="s2">(</span><span class="s5">12</span><span class="s2">, </span><span class="s5">0</span><span class="s2">, </span><span class="s5">12</span><span class="s2">, </span><span class="s5">12</span><span class="s2">));</span>
+
+        <span class="s4">// Add buttons to right</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">sectionTitle</span><span class="s2">(</span><span class="s3">&quot;Actions&quot;</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">row</span><span class="s2">(</span><span class="s1">NewGameButton</span><span class="s2">, </span><span class="s1">ResetButton</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Box</span><span class="s2">.</span><span class="s1">createVerticalStrut</span><span class="s2">(</span><span class="s5">12</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">row</span><span class="s2">(</span><span class="s1">UndoButton</span><span class="s2">, </span><span class="s1">EraseButton</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Box</span><span class="s2">.</span><span class="s1">createVerticalStrut</span><span class="s2">(</span><span class="s5">12</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">row</span><span class="s2">(</span><span class="s1">HintButton</span><span class="s2">));</span>
+
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Box</span><span class="s2">.</span><span class="s1">createVerticalStrut</span><span class="s2">(</span><span class="s5">16</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">sectionTitle</span><span class="s2">(</span><span class="s3">&quot;Settings&quot;</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">ValidationCB</span><span class="s2">);</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">HintCB</span><span class="s2">);</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">RandomCB</span><span class="s2">);</span>
+
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Box</span><span class="s2">.</span><span class="s1">createVerticalStrut</span><span class="s2">(</span><span class="s5">16</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">sectionTitle</span><span class="s2">(</span><span class="s3">&quot;Keypad&quot;</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">makeKeypad</span><span class="s2">());</span>
+
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Box</span><span class="s2">.</span><span class="s1">createVerticalStrut</span><span class="s2">(</span><span class="s5">16</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">sectionTitle</span><span class="s2">(</span><span class="s3">&quot;Status&quot;</span><span class="s2">));</span>
+        <span class="s1">right</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">status</span><span class="s2">);</span>
+
+        <span class="s4">// Root layout</span>
+        <span class="s1">setLayout</span><span class="s2">(</span><span class="s0">new </span><span class="s1">BorderLayout</span><span class="s2">());</span>
+        <span class="s1">add</span><span class="s2">(</span><span class="s1">left</span><span class="s2">, </span><span class="s1">BorderLayout</span><span class="s2">.</span><span class="s1">CENTER</span><span class="s2">);</span>
+        <span class="s1">add</span><span class="s2">(</span><span class="s1">right</span><span class="s2">, </span><span class="s1">BorderLayout</span><span class="s2">.</span><span class="s1">EAST</span><span class="s2">);</span>
+
+        <span class="s1">NewGameButton</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">ResetButton</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">UndoButton</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">EraseButton</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">HintButton</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+
+        <span class="s1">ValidationCB</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">HintCB</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">RandomCB</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+
+        <span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">true</span><span class="s2">);</span>
+        <span class="s1">setSize</span><span class="s2">(</span><span class="s5">1000</span><span class="s2">, </span><span class="s5">800</span><span class="s2">);</span>
+        <span class="s1">setLocationRelativeTo</span><span class="s2">(</span><span class="s0">null</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public void </span><span class="s1">bind</span><span class="s2">(</span><span class="s1">SudokuModel model</span><span class="s2">, </span><span class="s1">SudokuController controller</span><span class="s2">) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">model </span><span class="s2">= </span><span class="s1">model</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">controller </span><span class="s2">= </span><span class="s1">controller</span><span class="s2">;</span>
+        <span class="s1">model</span><span class="s2">.</span><span class="s1">addObserver</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">update</span><span class="s2">(</span><span class="s1">Observable o</span><span class="s2">, </span><span class="s1">Object arg</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">controller </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) {</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+        <span class="s1">SwingUtilities</span><span class="s2">.</span><span class="s1">invokeLater</span><span class="s2">(() </span><span class="s1">-&gt; </span><span class="s2">{</span>
+            <span class="s0">boolean </span><span class="s1">solvedNow </span><span class="s2">= </span><span class="s1">controller</span><span class="s2">.</span><span class="s1">handleModelChanged</span><span class="s2">();</span>
+            <span class="s0">if </span><span class="s2">(</span><span class="s1">solvedNow</span><span class="s2">) {</span>
+                <span class="s1">JOptionPane</span><span class="s2">.</span><span class="s1">showMessageDialog</span><span class="s2">(</span><span class="s0">this</span><span class="s2">, </span><span class="s3">&quot;Solved&quot;</span><span class="s2">, </span><span class="s3">&quot;Sudoku&quot;</span><span class="s2">, </span><span class="s1">JOptionPane</span><span class="s2">.</span><span class="s1">INFORMATION_MESSAGE</span><span class="s2">);</span>
+            <span class="s2">}</span>
+        <span class="s2">});</span>
+    <span class="s2">}</span>
+
+    <span class="s0">private static </span><span class="s1">JLabel sectionTitle</span><span class="s2">(</span><span class="s1">String title</span><span class="s2">) {</span>
+        <span class="s1">JLabel titleLabel </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JLabel</span><span class="s2">(</span><span class="s1">title</span><span class="s2">);</span>
+        <span class="s1">titleLabel</span><span class="s2">.</span><span class="s1">setFont</span><span class="s2">(</span><span class="s1">titleLabel</span><span class="s2">.</span><span class="s1">getFont</span><span class="s2">().</span><span class="s1">deriveFont</span><span class="s2">(</span><span class="s1">Font</span><span class="s2">.</span><span class="s1">BOLD</span><span class="s2">, </span><span class="s5">13f</span><span class="s2">));</span>
+        <span class="s1">titleLabel</span><span class="s2">.</span><span class="s1">setBorder</span><span class="s2">(</span><span class="s1">BorderFactory</span><span class="s2">.</span><span class="s1">createEmptyBorder</span><span class="s2">(</span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">, </span><span class="s5">6</span><span class="s2">, </span><span class="s5">0</span><span class="s2">));</span>
+        <span class="s0">return </span><span class="s1">titleLabel</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">private static </span><span class="s1">JPanel row</span><span class="s2">(</span><span class="s1">JComponent... components</span><span class="s2">) {</span>
+        <span class="s1">JPanel p </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JPanel</span><span class="s2">(</span><span class="s0">new </span><span class="s1">FlowLayout</span><span class="s2">(</span><span class="s1">FlowLayout</span><span class="s2">.</span><span class="s1">LEFT</span><span class="s2">, </span><span class="s5">8</span><span class="s2">, </span><span class="s5">0</span><span class="s2">));</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s1">JComponent component </span><span class="s2">: </span><span class="s1">components</span><span class="s2">) {</span>
+            <span class="s1">p</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">component</span><span class="s2">);</span>
+        <span class="s2">}</span>
+        <span class="s1">p</span><span class="s2">.</span><span class="s1">setAlignmentX</span><span class="s2">(</span><span class="s1">Component</span><span class="s2">.</span><span class="s1">LEFT_ALIGNMENT</span><span class="s2">);</span>
+        <span class="s0">return </span><span class="s1">p</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">private </span><span class="s1">JPanel makeKeypad</span><span class="s2">() {</span>
+        <span class="s1">JPanel p </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JPanel</span><span class="s2">(</span><span class="s0">new </span><span class="s1">GridLayout</span><span class="s2">(</span><span class="s5">3</span><span class="s2">, </span><span class="s5">3</span><span class="s2">, </span><span class="s5">6</span><span class="s2">, </span><span class="s5">6</span><span class="s2">));</span>
+        <span class="s1">p</span><span class="s2">.</span><span class="s1">setAlignmentX</span><span class="s2">(</span><span class="s1">Component</span><span class="s2">.</span><span class="s1">LEFT_ALIGNMENT </span><span class="s2">+ </span><span class="s1">Component</span><span class="s2">.</span><span class="s1">RIGHT_ALIGNMENT</span><span class="s2">);</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s5">9</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+            <span class="s1">JButton b </span><span class="s2">= </span><span class="s0">new </span><span class="s1">JButton</span><span class="s2">(</span><span class="s1">String</span><span class="s2">.</span><span class="s1">valueOf</span><span class="s2">(</span><span class="s1">i </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">));</span>
+            <span class="s1">b</span><span class="s2">.</span><span class="s1">setFocusable</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+            <span class="s1">digitButtons</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s1">b</span><span class="s2">;</span>
+            <span class="s1">p</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">b</span><span class="s2">);</span>
+        <span class="s2">}</span>
+        <span class="s0">return </span><span class="s1">p</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public </span><span class="s1">BoardPanel getBoardPanel</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">boardPanel</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JButton getNewGameButton</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">NewGameButton</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JButton getResetButton</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">ResetButton</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JButton getUndoButton</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">UndoButton</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JButton getEraseButton</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">EraseButton</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JButton getHintButton</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">HintButton</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JCheckBox getValidationCheckBox</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">ValidationCB</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JCheckBox getHintCheckBox</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">HintCB</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JCheckBox getRandomCheckBox</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">RandomCB</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">JButton getDigitButton</span><span class="s2">(</span><span class="s0">int </span><span class="s1">digital</span><span class="s2">) { </span><span class="s0">return </span><span class="s1">digitButtons</span><span class="s2">[</span><span class="s1">digital </span><span class="s2">- </span><span class="s5">1</span><span class="s2">]; }</span>
+
+    <span class="s0">public void </span><span class="s1">setStatusText</span><span class="s2">(</span><span class="s1">String text</span><span class="s2">) { </span><span class="s1">status</span><span class="s2">.</span><span class="s1">setText</span><span class="s2">(</span><span class="s1">text</span><span class="s2">); }</span>
+<span class="s2">}</span></pre>
+</body>
+</html>
